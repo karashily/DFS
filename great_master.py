@@ -121,7 +121,7 @@ def main():
         '''
         initialize ports
         '''
-        initialize_ports = Process(target = initialize_ports_table,args = (table,lock2))
+        initialize_ports = Process(target = initialize_ports_table,args = (ports_table,lock2))
         initialize_ports.start()
         initialize_ports.join()
         ''''''
