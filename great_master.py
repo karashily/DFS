@@ -55,14 +55,34 @@ def upload(table, lock, ports_table, msg ,socket):
     socket.send_pyobj(True)
 
 
+def get_file_loc (filename):
+    for i in range(len(table)):
+        if(table[i][file_name] == filename and table[i]['is_data_node_alive'] == True):
+            return table[data_node_number]
 
 
-def download(msg):
+
+def download(msg, socket):
     pass
     # find file on which datanode
+    loc = get_file_loc(msg[FileName])
+
+    # get a free port of that machine
+
     # send not busy port to client
+    socket.send_string(port)
+
     # wait for success from datakeeper
+    success_port = port[:-2]+"2"+port[-1]
+    context = zmq.Context()
+    results_receiver = context.socket(zmq.PULL)
+    print(success_port)
+    results_receiver.connect("tcp://127.0.0.1:"+success_port)
+    success = results_receiver.recv_pyobj()
+
     # send done to client
+    handshake = socket.recv_string()
+    socket.send_pyobj(True)
 
 def process(table, lock, master_process_port,ports_table):
     context = zmq.Context()
@@ -81,7 +101,7 @@ def process(table, lock, master_process_port,ports_table):
             #socket.send_string(port)
             upload(table, lock,ports_table,  msg ,socket)
         elif msg['Type']==0:
-            download(msg)
+            download(msg, socket)
 
 def initialize_ports_table(ports_table,lock):
     for i in range(len(data_keepers_ports_ips)):
