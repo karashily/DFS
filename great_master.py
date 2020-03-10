@@ -4,7 +4,7 @@ from multiprocessing import Process,Value,Lock,Manager
 data_keepers_ips = [
     "127.0.0.1:",
     "127.0.0.1:",
-    "127.0.0.1"
+    "127.0.0.1:"
 ]
 
 num_ports_per_data_keeper = [5,3,4]
@@ -15,6 +15,18 @@ for j in range(3):
     for i in range(num_ports_per_data_keeper[j]):
         data_keepers_ports_ips.append(data_keepers_ips[j]+":551"+str(i))
 
+
+
+def initialize_ports_table(ports_table,lock):
+    for i in range(len(data_keepers_ports_ips)):
+        d = {
+            'ip': data_keepers_ports_ips[i],
+            'free': True,
+            'alive': True
+        }
+        lock.acquire()
+        ports_table.append(d)
+        lock.release()  
 
 
 def add_to_look_up_table(table,lock,user_id,file_name,data_node_number,is_data_node_alive):
@@ -55,15 +67,13 @@ def upload(table, lock, ports_table, msg ,socket):
     socket.send_pyobj(True)
 
 
-def get_file_loc (filename):
+def get_file_loc(filename):
     for i in range(len(table)):
         if(table[i][file_name] == filename and table[i]['is_data_node_alive'] == True):
             return table[data_node_number]
 
 
-
 def download(msg, ports_table, socket):
-    pass
     # find file on which datanode
     loc = get_file_loc(msg['FileName'])
 
@@ -89,10 +99,12 @@ def download(msg, ports_table, socket):
     handshake = socket.recv_string()
     socket.send_pyobj(True)
 
+
+
 def process(table, lock, master_process_port,ports_table):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
-    socket.bind("tcp://127.0.0.1:5500" )
+    socket.bind("tcp://127.0.0.1:5500")
 
 
     while True:
@@ -110,19 +122,6 @@ def process(table, lock, master_process_port,ports_table):
 
 
 
-def initialize_ports_table(ports_table,lock):
-    for i in range(len(data_keepers_ports_ips)):
-        d = {
-            'ip': data_keepers_ports_ips[i],
-            'free': True,
-            'alive': True
-        }
-        lock.acquire()
-        ports_table.append(d)
-        lock.release()  
-
-
-
 def get_free_port(ports_table, node):
     if(node == 'any'):
         for i in range(len(ports_table)):
@@ -135,6 +134,8 @@ def get_free_port(ports_table, node):
                 return ports_table[i]["ip"]
 
     return None
+
+
 
 def main():
     with Manager() as manager:
@@ -158,7 +159,7 @@ def main():
         initialize_ports.start()
         initialize_ports.join()
         ''''''
-        print("maan calling process")
+        print("main calling process")
         first_process = Process(target = process,args = (table,lock3,"5500",ports_table))
         first_process.start()
         first_process.join()
