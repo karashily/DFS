@@ -15,7 +15,6 @@ for j in range(3):
     for i in range(num_ports_per_data_keeper[j]):
         data_keepers_ports_ips.append(data_keepers_ips[j]+":551"+str(i))
 
-    
 
 
 def add_to_look_up_table(table,lock,user_id,file_name,data_node_number,is_data_node_alive):
@@ -30,17 +29,18 @@ def add_to_look_up_table(table,lock,user_id,file_name,data_node_number,is_data_n
     lock.release()
 
 def upload(table, lock, ports_table, msg ,socket):
-    # TODO:find free port
-    #port = get_free_port(ports_table)
+    # find free port
+    #port = get_free_port(ports_table, 'any')
     port = "5510"
     if (port == None):
-        port = "7z sa3eed el mara el kadma"
+        socket.send_string("No free ports availabe. please try again later......")
+        return
         
     # send port to client
     socket.send_string(port)
 
     # wait for success from datakeeper
-    success_port = port[:-2]+"2"+port[-1]
+    success_port = port[:-2] + str(int(port[-2]) + 1) + port[-1]
     context = zmq.Context()
     results_receiver = context.socket(zmq.PULL)
     print(success_port)
@@ -62,18 +62,23 @@ def get_file_loc (filename):
 
 
 
-def download(msg, socket):
+def download(msg, ports_table, socket):
     pass
     # find file on which datanode
-    loc = get_file_loc(msg[FileName])
+    loc = get_file_loc(msg['FileName'])
 
     # get a free port of that machine
+    port = get_free_port(ports_table, loc)
 
+    if(port is None):
+        socket.send_string("No free ports availabe. please try again later......")
+        return
+    
     # send not busy port to client
     socket.send_string(port)
 
     # wait for success from datakeeper
-    success_port = port[:-2]+"2"+port[-1]
+    success_port = port[:-2] + str(int(port[-2]) + 1) + port[-1]
     context = zmq.Context()
     results_receiver = context.socket(zmq.PULL)
     print(success_port)
@@ -92,16 +97,18 @@ def process(table, lock, master_process_port,ports_table):
 
     while True:
         print("before receiving /n")
-    #  Wait for next request from client
+        #  Wait for next request from client
         msg = socket.recv_pyobj()
-    #socket.send("World from %s" % port)
+        #socket.send("World from %s" % port)
         print ("master got message:",msg)
 
         if msg['Type']==1:
             #socket.send_string(port)
             upload(table, lock,ports_table,  msg ,socket)
         elif msg['Type']==0:
-            download(msg, socket)
+            download(msg, ports_table, socket)
+
+
 
 def initialize_ports_table(ports_table,lock):
     for i in range(len(data_keepers_ports_ips)):
@@ -116,10 +123,16 @@ def initialize_ports_table(ports_table,lock):
 
 
 
-def get_free_port(ports_table):
-    for i in range(len(ports_table)):
-        if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True)):
-            return ports_table[i]["ip"]
+def get_free_port(ports_table, node):
+    if(node == 'any'):
+        for i in range(len(ports_table)):
+            if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True)):
+                return ports_table[i]["ip"]
+
+    else:
+        for i in range(len(ports_table)):
+            if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and (ports_table[i]['ip'][:-5] == node)):
+                return ports_table[i]["ip"]
 
     return None
 
@@ -145,7 +158,7 @@ def main():
         initialize_ports.start()
         initialize_ports.join()
         ''''''
-        print("mian calling process")
+        print("maan calling process")
         first_process = Process(target = process,args = (table,lock3,"5500",ports_table))
         first_process.start()
         first_process.join()
