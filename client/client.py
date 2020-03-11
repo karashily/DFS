@@ -10,6 +10,9 @@ import random
 import sys
 import time
 import threading 
+import os
+from multiprocessing import Process,Value,Lock,Manager
+ 
 connectionPort="tcp://127.0.0.1:"
 
 class Client:
@@ -21,7 +24,7 @@ class Client:
 
     def UploadFile(self,fileName,portUpload,mastersocket):
         socket = self.context.socket(zmq.PAIR)
-        socket.connect(connectionPort+portUpload)
+        socket.connect(portUpload)
         print("client connection to keeper done /n")
         f=open(fileName,"rb")
         v=f.read()
@@ -29,15 +32,15 @@ class Client:
         socket.send_pyobj(uploadedVideo)
         print("client:video uploaded ^_^ /n")
         f.close()
-        mastersocket.send_string("done")
+        mastersocket.send_pyobj({})
         print("client done message sent to master /n")
         success=mastersocket.recv_pyobj()
         if(success==True):
             socket.close()
  ########################################################       
-    def DownloadFile(self,fileName,dataKeepertPort,mastersocket):
+    def DownloadFile(self,fileName,dataKeeperPort,mastersocket):
         socket = self.context.socket(zmq.PAIR)
-        socket.connect(connectionPort+dataKeepertPort)
+        socket.connect(dataKeeperPort)
         toBeDownloaded={'FileName':fileName,'Type':0}
         socket.send_pyobj(toBeDownloaded)
         print("request sent... /n")
@@ -46,11 +49,12 @@ class Client:
         name=downloadedVideo['FileName']
         print(name+"/n")
         file=downloadedVideo['File']
-        f = open("downloaded.mp4", "wb")
+
+        f = open("recieved/downloaded.mp4", "wb")
         f.write(file)
         f.close()
-        print("video %s added on machine no %d successfully ^_^ /n" %(name,self.ClientID))
-        mastersocket.send_string("done")
+        print("video %s added from client no %s successfully ^_^ /n" %(name,self.ClientID))
+        mastersocket.send_pyobj({})
         success=mastersocket.recv_pyobj()
         if(success==True):
             socket.close()
@@ -60,12 +64,17 @@ class Client:
         #connect to master
         socket = self.context.socket(zmq.REQ)
         socket.connect(connectionPort+self.masterPort)
-        
         message={'clientID':self.ClientID,'Type':operation,'FileName':Filename}
         socket.send_pyobj(message) #send message to master
         print("client message sent to master /n")
         dataport=socket.recv_string()#wait for port
-        print("master responded  to client with port/n")
+        while(dataport == 'fatal'):
+            print("Master responded with fatal error......")
+            socket.send_pyobj(message) #send message to master
+            print("client message sent to master /n")
+            dataport=socket.recv_string()#wait for port
+            
+        print("master responded  to client with port {}/n".format(dataport))
         if(operation==1):#upload
            
             self.UploadFile(Filename,dataport,socket)
@@ -75,5 +84,35 @@ class Client:
         socket.close()
             
  ######################           
-c1=Client(3)
-c1.connectToMaster(1,"1.mp4")
+c1=Client(random.randint(0,9))
+
+clientsNum = int(input("Number of clients: "))
+clients=[]
+for i in range(clientsNum):
+    id  = input("please enter client %d id: " %i )
+    rightOperation = True
+    while(rightOperation):
+        operation = input("please enter the operation (download/upload): ")
+        if(operation == 'download'):
+            operation = 0
+            rightOperation = False
+        elif(operation == 'upload'):
+            operation = 1
+            rightOperation = False
+        else:
+            print("Wrong Operation...!")
+
+    fileName = input("please enter the filename: ")
+
+    c = Client(id)
+    p = Process(target=c.connectToMaster, args=(operation, fileName))
+    clients.append(p)
+        
+    
+for i in clients:
+    i.start()
+
+for i in clients:
+    i.join()
+# c1.connectToMaster(1,"1.mp4")
+# c1.connectToMaster(0,"1.mp4")

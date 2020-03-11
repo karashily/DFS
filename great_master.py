@@ -2,22 +2,22 @@ import zmq
 from multiprocessing import Process,Value,Lock,Manager
 
 data_keepers_ips = [
-    "127.0.0.1:",
-    "127.0.0.1:",
-    "127.0.0.1:"
+    "tcp://127.0.0.1:",
+    "tcp://127.0.0.1:",
+    "tcp://127.0.0.1:"
 ]
 
-num_ports_per_data_keeper = [5,3,4]
+num_ports_per_data_keeper = [3,0,0]
 
 data_keepers_ports_ips = []
 
 for j in range(3):
     for i in range(num_ports_per_data_keeper[j]):
-        data_keepers_ports_ips.append(data_keepers_ips[j]+":551"+str(i))
+        data_keepers_ports_ips.append(data_keepers_ips[j]+"551"+str(i))
 
 
 
-def initialize_ports_table(ports_table,lock):
+def initialize_ports_table(ports_table, lock):
     for i in range(len(data_keepers_ports_ips)):
         d = {
             'ip': data_keepers_ports_ips[i],
@@ -43,9 +43,9 @@ def add_to_look_up_table(table,lock,user_id,file_name,data_node_number,is_data_n
 def upload(table, lock, ports_table, msg ,socket):
     # find free port
     #port = get_free_port(ports_table, 'any')
-    port = "5510"
+    port = "tcp://127.0.0.1:5510"
     if (port == None):
-        socket.send_string("No free ports availabe. please try again later......")
+        socket.send_string("fatal")
         return
         
     # send port to client
@@ -56,34 +56,39 @@ def upload(table, lock, ports_table, msg ,socket):
     context = zmq.Context()
     results_receiver = context.socket(zmq.PULL)
     print(success_port)
-    results_receiver.connect("tcp://127.0.0.1:"+success_port)
+    results_receiver.connect(success_port)
     success = results_receiver.recv_pyobj()
 
     # add file to table
     add_to_look_up_table(table,lock,msg["clientID"],msg["FileName"],port[:-5],True)
+    print(table)
 
     # send done to client
-    handshake = socket.recv_string()
+    handshake = socket.recv_pyobj()
+    print(handshake)
     socket.send_pyobj(True)
+    
 
 
-def get_file_loc(filename):
+
+def get_file_loc(table, filename):
     for i in range(len(table)):
-        if(table[i][file_name] == filename and table[i]['is_data_node_alive'] == True):
-            return table[data_node_number]
+        if(table[i]['file_name'] == filename and table[i]['is_data_node_alive'] == True):
+            return table[i]['data_node_number']
 
 
-def download(msg, ports_table, socket):
+def download(table, msg, ports_table, socket):
     # find file on which datanode
-    loc = get_file_loc(msg['FileName'])
+    loc = get_file_loc(table, msg['FileName'])
 
     # get a free port of that machine
     port = get_free_port(ports_table, loc)
-
+    
     if(port is None):
-        socket.send_string("No free ports availabe. please try again later......")
+        socket.send_string("fatal")
         return
     
+    print(port)
     # send not busy port to client
     socket.send_string(port)
 
@@ -91,12 +96,12 @@ def download(msg, ports_table, socket):
     success_port = port[:-2] + str(int(port[-2]) + 1) + port[-1]
     context = zmq.Context()
     results_receiver = context.socket(zmq.PULL)
-    print(success_port)
-    results_receiver.connect("tcp://127.0.0.1:"+success_port)
+    print("success port",success_port)
+    results_receiver.connect(success_port)
     success = results_receiver.recv_pyobj()
 
     # send done to client
-    handshake = socket.recv_string()
+    handshake = socket.recv_pyobj()
     socket.send_pyobj(True)
 
 
@@ -118,18 +123,21 @@ def process(table, lock, master_process_port,ports_table):
             #socket.send_string(port)
             upload(table, lock,ports_table,  msg ,socket)
         elif msg['Type']==0:
-            download(msg, ports_table, socket)
+            download(table, msg, ports_table, socket)
 
 
 
 def get_free_port(ports_table, node):
     if(node == 'any'):
+        print(ports_table,"ay bta3")
         for i in range(len(ports_table)):
+           
             if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True)):
                 return ports_table[i]["ip"]
 
     else:
         for i in range(len(ports_table)):
+            print("ip", ports_table[i]['ip'][:-5], "node", node)
             if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and (ports_table[i]['ip'][:-5] == node)):
                 return ports_table[i]["ip"]
 
@@ -155,7 +163,7 @@ def main():
         '''
         initialize ports
         '''
-        initialize_ports = Process(target = initialize_ports_table,args = (ports_table,lock2))
+        initialize_ports = Process(target = initialize_ports_table, args = (ports_table,lock2))
         initialize_ports.start()
         initialize_ports.join()
         ''''''
