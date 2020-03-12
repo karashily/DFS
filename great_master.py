@@ -1,11 +1,17 @@
 import zmq
 from multiprocessing import Process,Value,Lock,Manager
+import datetime
+
 
 data_keepers_ips = [
     "tcp://127.0.0.1:",
     "tcp://127.0.0.1:",
     "tcp://127.0.0.1:"
 ]
+
+master_own_ip = "tcp://127.0.0.1:"
+master_alive_port = "5400"
+
 
 num_ports_per_data_keeper = [3,0,0]
 
@@ -22,11 +28,57 @@ def initialize_ports_table(ports_table, lock):
         d = {
             'ip': data_keepers_ports_ips[i],
             'free': True,
-            'alive': True
+            'alive': False,
+            'last_time_alive': datetime.datetime.now() - datetime.timedelta(seconds=5)
         }
         lock.acquire()
         ports_table.append(d)
         lock.release()  
+
+
+def alive (table,ports_table,lock):
+    context = zmq.Context()
+    results_receiver = context.socket(zmq.PULL)
+    results_receiver.bind(master_own_ip + master_alive_port)
+    while True:
+        d = results_receiver.recv_string()
+        lock.acquire()
+
+        for i in range(len(ports_table)):
+            x = ports_table[i]
+            if (x['ip'][:-5] == d):
+                x['alive'] = True
+                x['last_time_alive'] = datetime.now() # time object
+
+        for i in range(len(table)):
+            x = table[i]
+            if (x['data_node_number'][:-5] == d):
+                x['is_data_node_alive'] = True
+
+        lock.release()
+
+
+def check_if_datakeeper_died(table,ports_table,lock):
+    while True:
+        lock.acquire()
+        recently_dead_datakeepers = []
+        for i in range(len(ports_table)):
+            x = ports_table[i]
+            if (((x['last_time_alive']-datetime.now()).total_seconds() > 2) and x['alive'] == True):
+                recently_dead_datakeepers.append(x)
+                x['alive'] = False
+
+
+        for i in range(len(recently_dead_datakeepers)):
+            x = recently_dead_datakeepers[i]['alive']
+            if (not x):
+                for j in range(len(table)):
+                    if(table[j]['data_node_number'] == recently_dead_datakeepers[i]['ip']):
+                        table[j]['is_data_node_alive'] = False
+
+        lock.release()
+
+
 
 
 def add_to_look_up_table(table,lock,user_id,file_name,data_node_number,is_data_node_alive):
@@ -64,9 +116,14 @@ def upload(table, lock, ports_table, msg ,socket):
     print(table)
 
     # send done to client
-    handshake = socket.recv_pyobj()
-    print(handshake)
-    socket.send_pyobj(True)
+    #handshake = socket.recv_pyobj()
+    #print(handshake)
+    success_port_of_client = success['success_port']
+    success_context = zmq.Context()
+    success_socket = success_context.socket(zmq.PAIR)
+    success_socket.connect(success_port_of_client)
+    success_socket.send_pyobj(True)
+
     
 
 
@@ -154,6 +211,9 @@ def main():
         print("lock 2")
         lock3 = Lock()
         print("lock 3 ")
+        lock4 = Lock()
+        lock5 = Lock()
+
         table = manager.list()
         
         ports_table = manager.list()
@@ -170,12 +230,25 @@ def main():
         print("main calling process")
         first_process = Process(target = process,args = (table,lock3,"5500",ports_table))
         first_process.start()
-        first_process.join()
 
-        # p = Process(target = test,args = (table,lock1,1,"dh el file name",3,"dh el file path",True))
-        # p.start()
-        # p.join()
-        # print(table[0])
+
+        '''
+        process responsible for I am alive msgs from datakeepers
+        '''
+        alive_process = Process(target = alive,args = (table,ports_table,lock4))
+        alive_process.start()
+
+        dead_process = Process(target = check_if_datakeeper_died,args = (table,ports_table,lock5))
+        dead_process.start()
+
+
+
+
+
+        first_process.join()
+        alive_process.join()
+        dead_process.join()
+
 
 
 main()
