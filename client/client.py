@@ -13,35 +13,39 @@ import threading
 import os
 from multiprocessing import Process,Value,Lock,Manager
  
-connectionPort="tcp://127.0.0.1:"
+IP="tcp://127.0.0.1:"
 
 class Client:
     context = zmq.Context() 
     masterPort="5500"      #to 5509
-    def __init__(self, ID):
+    def __init__(self, ID,port):
         self.ClientID = ID
+        self.clientSuccessPort=IP+"530"+port
 #hand shaking with master,port number returned from master
 
-    def UploadFile(self,fileName,portUpload,mastersocket):
+    def UploadFile(self,fileName,portUpload):
         socket = self.context.socket(zmq.PAIR)
         socket.connect(portUpload)
         print("client connection to keeper done /n")
         f=open(fileName,"rb")
         v=f.read()
-        uploadedVideo={'File':v,'FileName':fileName,'Type':1}  #type: 1= upload   0= download
+        uploadedVideo={'File':v,'FileName':fileName,'Type':1,'successport':self.clientSuccessPort}  #type: 1= upload   0= download
         socket.send_pyobj(uploadedVideo)
         print("client:video uploaded ^_^ /n")
         f.close()
-        mastersocket.send_pyobj({})
-        print("client done message sent to master /n")
+        mastersocket=self.context.socket(zmq.PAIR)
+        mastersocket.bind(self.clientSuccessPort)
+        print("client waiting success message from  master /n")
         success=mastersocket.recv_pyobj()
         if(success==True):
             socket.close()
+            mastersocket.close()
+            print("client no. %d left successfully" %self.ClientID)
  ########################################################       
-    def DownloadFile(self,fileName,dataKeeperPort,mastersocket):
+    def DownloadFile(self,fileName,dataKeeperPort):
         socket = self.context.socket(zmq.PAIR)
         socket.connect(dataKeeperPort)
-        toBeDownloaded={'FileName':fileName,'Type':0}
+        toBeDownloaded={'FileName':fileName,'Type':0,'successport':self.clientSuccessPort}
         socket.send_pyobj(toBeDownloaded)
         print("request sent... /n")
         
@@ -49,21 +53,27 @@ class Client:
         name=downloadedVideo['FileName']
         print(name+"/n")
         file=downloadedVideo['File']
-
-        f = open("recieved/downloaded.mp4", "wb")
+        # Create target Directory if don't exist
+        myfolder="client no. %d folder" %self.ClientID
+        if not os.path.exists(myfolder):
+            os.makedirs(myfolder)
+        f = open(myfolder+"/"+fileName, "wb")
         f.write(file)
         f.close()
         print("video %s added from client no %s successfully ^_^ /n" %(name,self.ClientID))
-        mastersocket.send_pyobj({})
+        mastersocket=self.context.socket(zmq.PAIR)
+        mastersocket.bind(self.clientSuccessPort)
+        print("client waiting success message from  master /n")
         success=mastersocket.recv_pyobj()
         if(success==True):
             socket.close()
-            
+            mastersocket.close()
+            print("client no. %d left successfully" %self.ClientID)
 #####################################################
     def connectToMaster(self,operation,Filename):
         #connect to master
         socket = self.context.socket(zmq.REQ)
-        socket.connect(connectionPort+self.masterPort)
+        socket.connect(IP+self.masterPort)
         message={'clientID':self.ClientID,'Type':operation,'FileName':Filename}
         socket.send_pyobj(message) #send message to master
         print("client message sent to master /n")
@@ -76,11 +86,11 @@ class Client:
             
         print("master responded  to client with port {}/n".format(dataport))
         if(operation==1):#upload
-           
-            self.UploadFile(Filename,dataport,socket)
+            socket.close()
+            self.UploadFile(Filename,dataport)
         else:#download
-            
-            self.DownloadFile(Filename,dataport,socket)
+            socket.close()
+            self.DownloadFile(Filename,dataport)
         socket.close()
             
  ######################           
@@ -88,6 +98,9 @@ c1=Client(random.randint(0,9))
 
 clientsNum = int(input("Number of clients: "))
 clients=[]
+while(clientsNum>10):
+    print("maximum allowable no. of clients is 10..try again")
+    clientsNum = int(input())
 for i in range(clientsNum):
     id  = input("please enter client %d id: " %i )
     rightOperation = True
@@ -104,7 +117,7 @@ for i in range(clientsNum):
 
     fileName = input("please enter the filename: ")
 
-    c = Client(id)
+    c = Client(id,i)
     p = Process(target=c.connectToMaster, args=(operation, fileName))
     clients.append(p)
         

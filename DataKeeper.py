@@ -5,14 +5,13 @@ Created on Sat Mar  7 13:07:34 2020
 @author: somar
 """
 import zmq
-import random
+import os
 import time
-import threading 
-from multiprocessing import Process,Value,Lock,Manager
+from multiprocessing import Process
 
 connectionPort="tcp://127.0.0.1:"
 class DataKeeper:
-    i_Am_Alive_port="5555"
+    i_Am_Alive_port="5400"
     #clientport = "5510"
     # mastersuccessport = port[:-2] + str(int(port[-2]) + 1) + port[-1]
     context = zmq.Context()
@@ -20,16 +19,14 @@ class DataKeeper:
         self.ID = ID
         self.clientport=port
         self.mastersuccessport = port[:-2] + str(int(port[-2]) + 1) + port[-1]
-    
-        
  #################################       
     def HeartBeat(self):
-        socket = self.context.socket(zmq.PUB)
-        socket.bind(connectionPort+self.i_Am_Alive_port)
+        socket = self.context.socket(zmq.push)
+        socket.connect(connectionPort+self.i_Am_Alive_port)
         while True:
-            topic = random.randrange(9999,10005)
-            messagedata = "keeper_no. %d is_alive/n" %self.ID
-            socket.send_string("%s %s" % (topic, messagedata))
+            #topic = random.randrange(9999,10005)
+            messagedata = connectionPort+self.i_Am_Alive_port
+            socket.send_string(messagedata)
             time.sleep(1)
             
  #####################################           
@@ -38,7 +35,10 @@ class DataKeeper:
         name=uploadedVideo['FileName']
         print(name+"/n")
         file=uploadedVideo['File']
-        f = open('data/'+name, "wb")
+        myfolder="keeper no. %d folder" %self.ID
+        if not os.path.exists(myfolder):
+            os.makedirs(myfolder)
+        f=open(myfolder+'/'+fileName,"rb")
         f.write(file)
         f.close()
         print("datakeeper:video %s added on machine no %d successfully ^_^ /n" %(name,self.ID))
@@ -48,8 +48,10 @@ class DataKeeper:
         print("d5lt el download")
         toBeDownloaded=message
         fileName=toBeDownloaded['FileName']
-        print(fileName+"/n")
-        f=open('data/'+fileName,"rb")
+        myfolder="keeper no. %d folder" %self.ID
+        if not os.path.exists(myfolder):
+            os.makedirs(myfolder)
+        f=open(myfolder+'/'+fileName,"rb")
         v=f.read()
         downloadedVideo={'File':v,'FileName':fileName}
         socket.send_pyobj(downloadedVideo)
@@ -67,18 +69,20 @@ class DataKeeper:
             print("keeper  received  from client /n")
             Type=message['Type']
             success=False
+            clientSuccessPort=message['successport']
             if(Type==1):
                     success= self.UploadFile(message)
                     if(success):
-                        
-                        mastersocket.send_pyobj(True)
+                        msg={'success':True,'successPort':clientSuccessPort}
+                        mastersocket.send_pyobj(msg)
                         
             else:
                 success=self.DownloadFile(message,socket)
                 if(success):
                     # mastersocket = self.context.socket(zmq.PUSH)
                     # mastersocket.bind(connectionPort+self.mastersuccessport)
-                    mastersocket.send_pyobj(True)
+                    msg={'success':True,'successPort':clientSuccessPort}
+                    mastersocket.send_pyobj(msg)
         
         
 d1=DataKeeper(5,"5510")
