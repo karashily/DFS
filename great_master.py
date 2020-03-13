@@ -22,7 +22,6 @@ for j in range(3):
         datakeepers_ports_ips.append(datakeepers_ips[j]+"551"+str(i))
 
 
-
 def initialize_ports_table(ports_table, lock):
     for i in range(len(datakeepers_ports_ips)):
         d = {
@@ -31,12 +30,6 @@ def initialize_ports_table(ports_table, lock):
             'alive': True,
             'last_time_alive': datetime.datetime.now() - datetime.timedelta(seconds=5)
         }
-
-        # d = Manager().dict() # create only 1 dict
-        # d['ip'] = data_keepers_ports_ips[i]
-        # d['free'] = True
-        # d['alive'] = False
-        # d['last_time_alive'] = datetime.datetime.now() - datetime.timedelta(seconds=5)
 
         lock.acquire()
         ports_table.append(d)
@@ -118,12 +111,43 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
         files_table_lock.release()
 
         # time.sleep(1)
-        
+
+    
+def acquire_port(ports_table, ports_table_lock, port):
+    # Update ports table
+    ports_table_lock.acquire()
+    for i in range(len(ports_table)):
+        if(ports_table[i]['ip'] == port):
+            d = {
+                'ip': ports_table[i]['ip'],
+                'free': False,
+                'alive': ports_table[i]['alive'],
+                'last_time_alive': ports_table[i]['last_time_alive']
+            }
+            ports_table.append(d)
+            ports_table.remove(ports_table[i])
+            break
+    ports_table_lock.release()
 
 
+def release_port(ports_table, ports_table_lock, port):
+    # Update ports table
+    ports_table_lock.acquire()
+    for i in range(len(ports_table)):
+        if(ports_table[i]['ip'] == port):
+            d = {
+                'ip': ports_table[i]['ip'],
+                'free': True,
+                'alive': ports_table[i]['alive'],
+                'last_time_alive': ports_table[i]['last_time_alive']
+            }
+            ports_table.append(d)
+            ports_table.remove(ports_table[i])
+            break
+    ports_table_lock.release()
 
 
-def add_to_look_up_table(files_table,files_table_lock,user_id,file_name,data_node_number,is_data_node_alive):
+def add_to_files_table(files_table,lock,user_id,file_name,data_node_number,is_data_node_alive):
     lock.acquire()
     d = {
         "user_id" : user_id,
@@ -134,15 +158,17 @@ def add_to_look_up_table(files_table,files_table_lock,user_id,file_name,data_nod
     files_table.append(d)
     lock.release()
 
-def upload(files_table, files_table_lock, ports_table, msg ,socket):
+def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket):
     # find free port
     #port = get_free_port(ports_table, 'any')
     port = "tcp://127.0.0.1:5510"
-    if (port == None):
-        socket.send_string("fatal")
+
+    if(port is None):
+        socket.send_string("no_free_ports")
         return
         
     # send port to client
+    acquire_port(ports_table, ports_table_lock, port)
     socket.send_string(port)
 
     # wait for success from datakeeper
@@ -154,8 +180,8 @@ def upload(files_table, files_table_lock, ports_table, msg ,socket):
     success = results_receiver.recv_pyobj()
 
     # add file to table
-    add_to_look_up_table(files_table, files_table_lock, msg["clientID"], msg["FileName"], port[:-5], True)
-    print(table)
+    add_to_files_table(files_table, files_table_lock, msg["clientID"], msg["FileName"], port[:-5], True)
+    print(files_table)
 
     # send done to client
     #handshake = socket.recv_pyobj()
@@ -166,29 +192,33 @@ def upload(files_table, files_table_lock, ports_table, msg ,socket):
     success_socket.connect(success_port_of_client)
     success_socket.send_pyobj(True)
 
-    
+    release_port(ports_table, ports_table_lock, port)
 
 
+def get_file_loc(files_table, filename):
+    for i in range(len(files_table)):
+        if(files_table[i]['file_name'] == filename and files_table[i]['is_data_node_alive'] == True):
+            return files_table[i]['data_node_number']
 
-def get_file_loc(table, filename):
-    for i in range(len(table)):
-        if(table[i]['file_name'] == filename and table[i]['is_data_node_alive'] == True):
-            return table[i]['data_node_number']
 
-
-def download(files_table, msg, ports_table, socket):
+def download(files_table, ports_table, ports_table_lock, msg, socket):
     # find file on which datanode
     loc = get_file_loc(files_table, msg['FileName'])
+
+    if(loc is None):
+        socket.send_string("file_not_found")
+        return
 
     # get a free port of that machine
     port = get_free_port(ports_table, loc)
     
     if(port is None):
-        socket.send_string("fatal")
+        socket.send_string("no_free_ports")
         return
     
     print(port)
     # send not busy port to client
+    acquire_port(ports_table, ports_table_lock, port)
     socket.send_string(port)
 
     # wait for success from datakeeper
@@ -206,9 +236,11 @@ def download(files_table, msg, ports_table, socket):
     success_socket.connect(success_port_of_client)
     success_socket.send_pyobj(True)
 
+    release_port(ports_table, ports_table_lock, port)
 
 
-def process(files_table, files_table_lock, master_process_port, ports_table):
+
+def process(files_table, files_table_lock, ports_table, ports_table_lock, master_process_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://127.0.0.1:5500")
@@ -223,24 +255,20 @@ def process(files_table, files_table_lock, master_process_port, ports_table):
 
         if msg['Type']==1:
             #socket.send_string(port)
-            upload(files_table, files_table_lock, ports_table, msg, socket)
+            upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket)
         elif msg['Type']==0:
-            download(files_table, msg, ports_table, socket)
+            download(files_table, ports_table, ports_table_lock, msg, socket)
 
 
 
 def get_free_port(ports_table, node):
     if(node == 'any'):
-        print(ports_table,"ay bta3")
         for i in range(len(ports_table)):
-           
             if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True)):
                 return ports_table[i]["ip"]
 
     else:
         for i in range(len(ports_table)):
-            print("ip", ports_table[i]['ip'][:-5], "node", node)
-            print(ports_table)
             if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and (ports_table[i]['ip'][:-5] == node)):
                 return ports_table[i]["ip"]
 
@@ -252,12 +280,8 @@ def main():
     with Manager() as manager:
         files_table_lock = Lock()
         ports_table_lock = Lock()
-        # lock3 = Lock()
-        # lock4 = Lock()
-        # lock5 = Lock()
 
-        files_table = manager.list()
-        
+        files_table = manager.list()  
         ports_table = manager.list()
 
         '''
@@ -272,7 +296,7 @@ def main():
         start processes
         '''
         
-        first_process = Process(target=process, args=(files_table, files_table_lock, "5500", ports_table))
+        first_process = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, "5500"))
         
         alive_process = Process(target=alive, args=(files_table, ports_table, files_table_lock, ports_table_lock))
         dead_process = Process(target=undertaker, args=(files_table, ports_table, files_table_lock, ports_table_lock))

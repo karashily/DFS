@@ -78,17 +78,22 @@ class Client:
         socket.send_pyobj(message) #send message to master
         print("client message sent to master /n")
         dataport=socket.recv_string()#wait for port
-        while(dataport == 'fatal'):
-            print("Master responded with fatal error......")
+        while(dataport == 'no_free_ports'):
+            print("Master responded with no free ports......\nTrying again...")
             socket.send_pyobj(message) #send message to master
             print("client message sent to master /n")
             dataport=socket.recv_string()#wait for port
+        
+        if(dataport == 'file_not_found'):
+            print('Requested File Not Found....')
+            socket.close()
+            return
             
-        print("master responded  to client with port {}/n".format(dataport))
-        if(operation==1):#upload
+        print("master responded  to client with port {}\n".format(dataport))
+        if(operation==1): #upload
             socket.close()
             self.UploadFile(Filename,dataport)
-        else:#download
+        else: #download
             socket.close()
             self.DownloadFile(Filename,dataport)
         socket.close()
