@@ -21,7 +21,7 @@ class DataKeeper:
         self.mastersuccessport = port[:-2] + str(int(port[-2]) + 1) + port[-1]
  #################################       
     def HeartBeat(self):
-        socket = self.context.socket(zmq.PUSH)
+        socket = self.context.socket(zmq.PUB)
         socket.connect(connectionPort+self.i_Am_Alive_port)
         while True:
             #topic = random.randrange(9999,10005)

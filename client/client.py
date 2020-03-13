@@ -100,7 +100,7 @@ clientsNum = int(input("Number of clients: "))
 clients=[]
 while(clientsNum>10):
     print("maximum allowable no. of clients is 10..try again")
-    clientsNum = int(input())
+    clientsNum = int(input("Number of clients: "))
 for i in range(clientsNum):
     id  = input("please enter client %d id: " %i )
     rightOperation = True

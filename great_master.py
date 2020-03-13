@@ -1,9 +1,9 @@
 import zmq
 from multiprocessing import Process,Value,Lock,Manager
 import datetime
+import time
 
-
-data_keepers_ips = [
+datakeepers_ips = [
     "tcp://127.0.0.1:",
     "tcp://127.0.0.1:",
     "tcp://127.0.0.1:"
@@ -13,20 +13,20 @@ master_own_ip = "tcp://127.0.0.1:"
 master_alive_port = "5400"
 
 
-num_ports_per_data_keeper = [3,0,0]
+ports_per_datakeeper = [1,0,0]
 
-data_keepers_ports_ips = []
+datakeepers_ports_ips = []
 
 for j in range(3):
-    for i in range(num_ports_per_data_keeper[j]):
-        data_keepers_ports_ips.append(data_keepers_ips[j]+"551"+str(i))
+    for i in range(ports_per_datakeeper[j]):
+        datakeepers_ports_ips.append(datakeepers_ips[j]+"551"+str(i))
 
 
 
 def initialize_ports_table(ports_table, lock):
-    for i in range(len(data_keepers_ports_ips)):
+    for i in range(len(datakeepers_ports_ips)):
         d = {
-            'ip': data_keepers_ports_ips[i],
+            'ip': datakeepers_ports_ips[i],
             'free': True,
             'alive': True,
             'last_time_alive': datetime.datetime.now() - datetime.timedelta(seconds=5)
@@ -43,57 +43,87 @@ def initialize_ports_table(ports_table, lock):
         lock.release()  
 
 
-def alive (table,ports_table,lock):
+def alive(files_table, ports_table, files_table_lock, ports_table_lock):
     context = zmq.Context()
-    results_receiver = context.socket(zmq.PULL)
+    results_receiver = context.socket(zmq.SUB)
     results_receiver.bind(master_own_ip + master_alive_port)
+    results_receiver.setsockopt_string(zmq.SUBSCRIBE, "")
+
     while True:
         d = results_receiver.recv_string()
-        #print("ahoooo",d)
-        lock.acquire()
-
+        
+        # Update ports table
+        ports_table_lock.acquire()
         for i in range(len(ports_table)):
-            #x = ports_table[i]
-            #print("x= ",x['ip'][:-5],"d= ",d)
             if (ports_table[i]['ip'][:-5] == d):
-                #print(ports_table[i]['alive'])
-                ports_table[i]['alive'] = True
-                #print(ports_table[i]['alive'])
-                ports_table[i]['last_time_alive'] = datetime.datetime.now() # time object
-                #print(ports_table[i]['alive'])
+                d = {
+                    'ip': ports_table[i]['ip'],
+                    'free': ports_table[i]['free'],
+                    'alive': True,
+                    'last_time_alive': datetime.datetime.now()
+                }
+                ports_table.append(d)
+                ports_table.remove(ports_table[i])
+        ports_table_lock.release()
 
-        for i in range(len(table)):
-            #x = table[i]
-            if (table[i]['data_node_number'][:-5] == d):
-                table[i]['is_data_node_alive'] = True
+        # Update Files table
+        files_table_lock.acquire()
+        for i in range(len(files_table)):
+            if (files_table[i]['data_node_number'][:-5] == d):
+                d = {
+                    "user_id" : files_table[j]['user_id'],
+                    "file_name" : files_table[j]['file_name'],
+                    "data_node_number" : files_table[j]['data_node_number'],
+                    "is_data_node_alive" : True
+                }
+                files_table.append(d)
+                files_table.remove(files_table(j))
+        files_table_lock.release()
 
-        lock.release()
+        # time.sleep(1)
 
 
-def check_if_datakeeper_died(table,ports_table,lock):
+def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
     while True:
-        lock.acquire()
         recently_dead_datakeepers = []
+        
+        # Update ports table
+        ports_table_lock.acquire()
         for i in range(len(ports_table)):
-            #x = ports_table[i]
-            if (((ports_table[i]['last_time_alive']-datetime.datetime.now()).total_seconds() > 2) and ports_table[i]['alive'] == True):
-                recently_dead_datakeepers.append(ports_table[i])
-                ports_table[i]['alive'] = False
+            if (((datetime.datetime.now()-ports_table[i]['last_time_alive']).total_seconds() > 2) and ports_table[i]['alive'] == True):
+                recently_dead_datakeepers.append(ports_table[i]['ip'])
+                d = {
+                    'ip': ports_table[i]['ip'],
+                    'free': ports_table[i]['free'],
+                    'alive': False,
+                    'last_time_alive': ports_table[i]['last_time_alive']
+                }
+                ports_table.append(d)
+                ports_table.remove(ports_table[i])
+        ports_table_lock.release()
 
-
+        # Update files Table
+        files_table_lock.acquire()
         for i in range(len(recently_dead_datakeepers)):
-            #x = recently_dead_datakeepers[i]['alive']
-            if (not recently_dead_datakeepers[i]['alive']):
-                for j in range(len(table)):
-                    if(table[j]['data_node_number'] == recently_dead_datakeepers[i]['ip']):
-                        table[j]['is_data_node_alive'] = False
+            for j in range(len(files_table)):
+                if(files_table[j]['data_node_number'] == recently_dead_datakeepers[i]):
+                    d = {
+                        "user_id" : files_table[j]['user_id'],
+                        "file_name" : files_table[j]['file_name'],
+                        "data_node_number" : files_table[j]['data_node_number'],
+                        "is_data_node_alive" : False
+                    }
+                    files_table.append(d)
+                    files_table.remove(files_table(j))
+        files_table_lock.release()
 
-        lock.release()
+        # time.sleep(1)
+        
 
 
 
 
-def add_to_look_up_table(table,lock,user_id,file_name,data_node_number,is_data_node_alive):
+def add_to_look_up_table(files_table,files_table_lock,user_id,file_name,data_node_number,is_data_node_alive):
     lock.acquire()
     d = {
         "user_id" : user_id,
@@ -101,10 +131,10 @@ def add_to_look_up_table(table,lock,user_id,file_name,data_node_number,is_data_n
         "data_node_number" : data_node_number,
         "is_data_node_alive" : is_data_node_alive
     }
-    table.append(d)
+    files_table.append(d)
     lock.release()
 
-def upload(table, lock, ports_table, msg ,socket):
+def upload(files_table, files_table_lock, ports_table, msg ,socket):
     # find free port
     #port = get_free_port(ports_table, 'any')
     port = "tcp://127.0.0.1:5510"
@@ -124,7 +154,7 @@ def upload(table, lock, ports_table, msg ,socket):
     success = results_receiver.recv_pyobj()
 
     # add file to table
-    add_to_look_up_table(table,lock,msg["clientID"],msg["FileName"],port[:-5],True)
+    add_to_look_up_table(files_table, files_table_lock, msg["clientID"], msg["FileName"], port[:-5], True)
     print(table)
 
     # send done to client
@@ -146,9 +176,9 @@ def get_file_loc(table, filename):
             return table[i]['data_node_number']
 
 
-def download(table, msg, ports_table, socket):
+def download(files_table, msg, ports_table, socket):
     # find file on which datanode
-    loc = get_file_loc(table, msg['FileName'])
+    loc = get_file_loc(files_table, msg['FileName'])
 
     # get a free port of that machine
     port = get_free_port(ports_table, loc)
@@ -178,7 +208,7 @@ def download(table, msg, ports_table, socket):
 
 
 
-def process(table, lock, master_process_port,ports_table):
+def process(files_table, files_table_lock, master_process_port, ports_table):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind("tcp://127.0.0.1:5500")
@@ -193,9 +223,9 @@ def process(table, lock, master_process_port,ports_table):
 
         if msg['Type']==1:
             #socket.send_string(port)
-            upload(table, lock,ports_table,  msg ,socket)
+            upload(files_table, files_table_lock, ports_table, msg, socket)
         elif msg['Type']==0:
-            download(table, msg, ports_table, socket)
+            download(files_table, msg, ports_table, socket)
 
 
 
@@ -220,36 +250,38 @@ def get_free_port(ports_table, node):
 
 def main():
     with Manager() as manager:
-        print("mian calling process")
-        lock1 = Lock()
-        print("lock 1 ")
-        lock2 = Lock()
-        print("lock 2")
-        lock3 = Lock()
-        print("lock 3 ")
-        lock4 = Lock()
-        lock5 = Lock()
+        files_table_lock = Lock()
+        ports_table_lock = Lock()
+        # lock3 = Lock()
+        # lock4 = Lock()
+        # lock5 = Lock()
 
-        table = manager.list()
+        files_table = manager.list()
         
         ports_table = manager.list()
-        print(" manager list done ")
+
+        '''
+        initialize ports table
+        '''
+        # initialize_ports = Process(target = initialize_ports_table, args = (ports_table,lock2))
+        initialize_ports_table(ports_table, ports_table_lock)
+        
 
 
         '''
-        initialize ports
+        start processes
         '''
-        initialize_ports = Process(target = initialize_ports_table, args = (ports_table,lock2))
-        ''''''
-        print("main calling process")
-        first_process = Process(target = process,args = (table,lock3,"5500",ports_table))
-        alive_process = Process(target = alive,args = (table,ports_table,lock4))
-        dead_process = Process(target = check_if_datakeeper_died,args = (table,ports_table,lock5))
+        
+        first_process = Process(target=process, args=(files_table, files_table_lock, "5500", ports_table))
+        
+        alive_process = Process(target=alive, args=(files_table, ports_table, files_table_lock, ports_table_lock))
+        dead_process = Process(target=undertaker, args=(files_table, ports_table, files_table_lock, ports_table_lock))
 
 
-        initialize_ports.start()
+        # initialize_ports.start()
+        # initialize_ports.join()
+
         first_process.start()
-
 
         '''
         process responsible for I am alive msgs from datakeepers
@@ -259,9 +291,12 @@ def main():
         dead_process.start()
 
 
+        # loging changes in ports table
+        while True:
+            print(ports_table)
+            time.sleep(1)
 
 
-        initialize_ports.join()
 
         first_process.join()
         alive_process.join()
