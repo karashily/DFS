@@ -28,7 +28,7 @@ def initialize_ports_table(ports_table, lock):
         d = {
             'ip': data_keepers_ports_ips[i],
             'free': True,
-            'alive': False,
+            'alive': True,
             'last_time_alive': datetime.datetime.now() - datetime.timedelta(seconds=5)
         }
 
@@ -56,9 +56,9 @@ def alive (table,ports_table,lock):
             #x = ports_table[i]
             #print("x= ",x['ip'][:-5],"d= ",d)
             if (ports_table[i]['ip'][:-5] == d):
-                print(ports_table[i]['alive'])
+                #print(ports_table[i]['alive'])
                 ports_table[i]['alive'] = True
-                print(ports_table[i]['alive'])
+                #print(ports_table[i]['alive'])
                 ports_table[i]['last_time_alive'] = datetime.datetime.now() # time object
                 #print(ports_table[i]['alive'])
 
