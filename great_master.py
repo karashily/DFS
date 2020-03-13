@@ -9,6 +9,12 @@ datakeepers_ips = [
     "tcp://127.0.0.1:"
 ]
 
+master_ports = [
+    "tcp://127.0.0.1:5500",
+    "tcp://127.0.0.1:5501",
+    "tcp://127.0.0.1:5502"
+]
+
 master_own_ip = "tcp://127.0.0.1:"
 master_alive_port = "5400"
 
@@ -159,10 +165,18 @@ def add_to_files_table(files_table,lock,user_id,file_name,data_node_number,is_da
     lock.release()
 
 def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket):
+    # checking that file isn't uploaded already
+    # for i in files_table:
+    #     if(msg["FileName"] == i['file_name']):
+    #         socket.send_string("filename_exists_already")
+    #         return
+    
     # find free port
-    #port = get_free_port(ports_table, 'any')
-    port = "tcp://127.0.0.1:5510"
+    ports_table_lock.acquire()
 
+    port = get_free_port(ports_table, 'any')
+    # port = "tcp://127.0.0.1:5510"
+    ports_table_lock.release()
     if(port is None):
         socket.send_string("no_free_ports")
         return
@@ -208,15 +222,15 @@ def download(files_table, ports_table, ports_table_lock, msg, socket):
     if(loc is None):
         socket.send_string("file_not_found")
         return
-
+    ports_table_lock.acquire()
     # get a free port of that machine
     port = get_free_port(ports_table, loc)
-    
+    ports_table_lock.release()
     if(port is None):
         socket.send_string("no_free_ports")
         return
     
-    print(port)
+    # print(port)
     # send not busy port to client
     acquire_port(ports_table, ports_table_lock, port)
     socket.send_string(port)
@@ -243,7 +257,7 @@ def download(files_table, ports_table, ports_table_lock, msg, socket):
 def process(files_table, files_table_lock, ports_table, ports_table_lock, master_process_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
-    socket.bind("tcp://127.0.0.1:5500")
+    socket.bind(master_process_port)
 
 
     while True:
@@ -296,7 +310,9 @@ def main():
         start processes
         '''
         
-        first_process = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, "5500"))
+        p1 = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, master_ports[0]))
+        p2 = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, master_ports[1]))
+        p3 = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, master_ports[2]))
         
         alive_process = Process(target=alive, args=(files_table, ports_table, files_table_lock, ports_table_lock))
         dead_process = Process(target=undertaker, args=(files_table, ports_table, files_table_lock, ports_table_lock))
@@ -305,7 +321,9 @@ def main():
         # initialize_ports.start()
         # initialize_ports.join()
 
-        first_process.start()
+        p1.start()
+        p2.start()
+        p3.start()
 
         '''
         process responsible for I am alive msgs from datakeepers
@@ -320,9 +338,9 @@ def main():
             print(ports_table)
             time.sleep(1)
 
-
-
-        first_process.join()
+        p1.join()
+        p2.join()
+        p3.join()
         alive_process.join()
         dead_process.join()
 
