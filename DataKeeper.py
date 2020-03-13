@@ -21,11 +21,11 @@ class DataKeeper:
         self.mastersuccessport = port[:-2] + str(int(port[-2]) + 1) + port[-1]
  #################################       
     def HeartBeat(self):
-        socket = self.context.socket(zmq.push)
+        socket = self.context.socket(zmq.PUSH)
         socket.connect(connectionPort+self.i_Am_Alive_port)
         while True:
             #topic = random.randrange(9999,10005)
-            messagedata = connectionPort+self.i_Am_Alive_port
+            messagedata = connectionPort[:-1]
             socket.send_string(messagedata)
             time.sleep(1)
             
@@ -35,12 +35,18 @@ class DataKeeper:
         name=uploadedVideo['FileName']
         print(name+"/n")
         file=uploadedVideo['File']
-        myfolder="keeper no. %d folder" %self.ID
+        myfolder="keeper no. %d folder" %self.ID    
         if not os.path.exists(myfolder):
             os.makedirs(myfolder)
-        f=open(myfolder+'/'+fileName,"rb")
+        
+        # with open(os.path.join(myfolder, name), 'rb') as f:
+        #     f.write(file)
+        
+        filepath = os.path.join(myfolder,name)
+        f=open(filepath,'wb')
         f.write(file)
         f.close()
+        
         print("datakeeper:video %s added on machine no %d successfully ^_^ /n" %(name,self.ID))
         return True
  ######################################
@@ -93,10 +99,13 @@ p1 = Process(target = d1.ConnectToClient)
 p2 = Process(target = d2.ConnectToClient)
 p3 = Process(target = d3.ConnectToClient)
 
+h1 = Process(target = d1.HeartBeat)
+h1.start()
 p1.start()
 p2.start()
 p3.start()
 
+h1.join()
 p1.join()
 p2.join()
 p3.join()

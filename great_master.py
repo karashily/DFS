@@ -31,6 +31,13 @@ def initialize_ports_table(ports_table, lock):
             'alive': False,
             'last_time_alive': datetime.datetime.now() - datetime.timedelta(seconds=5)
         }
+
+        # d = Manager().dict() # create only 1 dict
+        # d['ip'] = data_keepers_ports_ips[i]
+        # d['free'] = True
+        # d['alive'] = False
+        # d['last_time_alive'] = datetime.datetime.now() - datetime.timedelta(seconds=5)
+
         lock.acquire()
         ports_table.append(d)
         lock.release()  
@@ -42,18 +49,23 @@ def alive (table,ports_table,lock):
     results_receiver.bind(master_own_ip + master_alive_port)
     while True:
         d = results_receiver.recv_string()
+        #print("ahoooo",d)
         lock.acquire()
 
         for i in range(len(ports_table)):
-            x = ports_table[i]
-            if (x['ip'][:-5] == d):
-                x['alive'] = True
-                x['last_time_alive'] = datetime.now() # time object
+            #x = ports_table[i]
+            #print("x= ",x['ip'][:-5],"d= ",d)
+            if (ports_table[i]['ip'][:-5] == d):
+                print(ports_table[i]['alive'])
+                ports_table[i]['alive'] = True
+                print(ports_table[i]['alive'])
+                ports_table[i]['last_time_alive'] = datetime.datetime.now() # time object
+                #print(ports_table[i]['alive'])
 
         for i in range(len(table)):
-            x = table[i]
-            if (x['data_node_number'][:-5] == d):
-                x['is_data_node_alive'] = True
+            #x = table[i]
+            if (table[i]['data_node_number'][:-5] == d):
+                table[i]['is_data_node_alive'] = True
 
         lock.release()
 
@@ -63,15 +75,15 @@ def check_if_datakeeper_died(table,ports_table,lock):
         lock.acquire()
         recently_dead_datakeepers = []
         for i in range(len(ports_table)):
-            x = ports_table[i]
-            if (((x['last_time_alive']-datetime.now()).total_seconds() > 2) and x['alive'] == True):
-                recently_dead_datakeepers.append(x)
-                x['alive'] = False
+            #x = ports_table[i]
+            if (((ports_table[i]['last_time_alive']-datetime.datetime.now()).total_seconds() > 2) and ports_table[i]['alive'] == True):
+                recently_dead_datakeepers.append(ports_table[i])
+                ports_table[i]['alive'] = False
 
 
         for i in range(len(recently_dead_datakeepers)):
-            x = recently_dead_datakeepers[i]['alive']
-            if (not x):
+            #x = recently_dead_datakeepers[i]['alive']
+            if (not recently_dead_datakeepers[i]['alive']):
                 for j in range(len(table)):
                     if(table[j]['data_node_number'] == recently_dead_datakeepers[i]['ip']):
                         table[j]['is_data_node_alive'] = False
@@ -118,7 +130,7 @@ def upload(table, lock, ports_table, msg ,socket):
     # send done to client
     #handshake = socket.recv_pyobj()
     #print(handshake)
-    success_port_of_client = success['success_port']
+    success_port_of_client = success['successPort']
     success_context = zmq.Context()
     success_socket = success_context.socket(zmq.PAIR)
     success_socket.connect(success_port_of_client)
@@ -158,8 +170,11 @@ def download(table, msg, ports_table, socket):
     success = results_receiver.recv_pyobj()
 
     # send done to client
-    handshake = socket.recv_pyobj()
-    socket.send_pyobj(True)
+    success_port_of_client = success['successPort']
+    success_context = zmq.Context()
+    success_socket = success_context.socket(zmq.PAIR)
+    success_socket.connect(success_port_of_client)
+    success_socket.send_pyobj(True)
 
 
 
@@ -195,6 +210,7 @@ def get_free_port(ports_table, node):
     else:
         for i in range(len(ports_table)):
             print("ip", ports_table[i]['ip'][:-5], "node", node)
+            print(ports_table)
             if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and (ports_table[i]['ip'][:-5] == node)):
                 return ports_table[i]["ip"]
 
@@ -224,26 +240,28 @@ def main():
         initialize ports
         '''
         initialize_ports = Process(target = initialize_ports_table, args = (ports_table,lock2))
-        initialize_ports.start()
-        initialize_ports.join()
         ''''''
         print("main calling process")
         first_process = Process(target = process,args = (table,lock3,"5500",ports_table))
+        alive_process = Process(target = alive,args = (table,ports_table,lock4))
+        dead_process = Process(target = check_if_datakeeper_died,args = (table,ports_table,lock5))
+
+
+        initialize_ports.start()
         first_process.start()
 
 
         '''
         process responsible for I am alive msgs from datakeepers
         '''
-        alive_process = Process(target = alive,args = (table,ports_table,lock4))
         alive_process.start()
 
-        dead_process = Process(target = check_if_datakeeper_died,args = (table,ports_table,lock5))
         dead_process.start()
 
 
 
 
+        initialize_ports.join()
 
         first_process.join()
         alive_process.join()

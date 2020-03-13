@@ -20,7 +20,7 @@ class Client:
     masterPort="5500"      #to 5509
     def __init__(self, ID,port):
         self.ClientID = ID
-        self.clientSuccessPort=IP+"530"+port
+        self.clientSuccessPort=IP+"530"+str(port)
 #hand shaking with master,port number returned from master
 
     def UploadFile(self,fileName,portUpload):
@@ -40,7 +40,7 @@ class Client:
         if(success==True):
             socket.close()
             mastersocket.close()
-            print("client no. %d left successfully" %self.ClientID)
+            print("client no. %s left successfully" %self.ClientID)
  ########################################################       
     def DownloadFile(self,fileName,dataKeeperPort):
         socket = self.context.socket(zmq.PAIR)
@@ -54,7 +54,7 @@ class Client:
         print(name+"/n")
         file=downloadedVideo['File']
         # Create target Directory if don't exist
-        myfolder="client no. %d folder" %self.ClientID
+        myfolder="client no. %s folder" %self.ClientID
         if not os.path.exists(myfolder):
             os.makedirs(myfolder)
         f = open(myfolder+"/"+fileName, "wb")
@@ -68,7 +68,7 @@ class Client:
         if(success==True):
             socket.close()
             mastersocket.close()
-            print("client no. %d left successfully" %self.ClientID)
+            print("client no. %s left successfully" %self.ClientID)
 #####################################################
     def connectToMaster(self,operation,Filename):
         #connect to master
@@ -94,7 +94,7 @@ class Client:
         socket.close()
             
  ######################           
-c1=Client(random.randint(0,9))
+#c1=Client(random.randint(0,9))
 
 clientsNum = int(input("Number of clients: "))
 clients=[]
