@@ -8,22 +8,22 @@ import copy
 
 
 datakeepers_ips = [
-    "tcp://127.0.0.1:",
-    "tcp://127.0.0.1:",
-    "tcp://127.0.0.1:"
+    "tcp://192.168.43.23:",
+    "tcp://192.168.43.197:",
+    "tcp://192.168.43.105:"
 ]
 
 master_ports = [
-    "tcp://127.0.0.1:5500",
-    "tcp://127.0.0.1:5501",
-    "tcp://127.0.0.1:5502"
+    "tcp://192.168.43.105:5500",
+    "tcp://192.168.43.105:5501",
+    "tcp://192.168.43.105:5502"
 ]
 
-master_own_ip = "tcp://127.0.0.1:"
+master_own_ip = "tcp://192.168.43.105:"
 master_alive_port = "5400"
 
 
-ports_per_datakeeper = [1,0,0]
+ports_per_datakeeper = [3,0,0]
 
 datakeepers_ports_ips = []
 
@@ -39,7 +39,7 @@ def initialize_ports_table(ports_table, lock):
         d = {
             'ip': datakeepers_ports_ips[i],
             'free': True,
-            'alive': True,
+            'alive': False,
             'last_time_alive': datetime.datetime.now() - datetime.timedelta(seconds=5)
         }
 
@@ -274,6 +274,7 @@ def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, so
     results_receiver.connect(success_port)
     success = results_receiver.recv_pyobj()
 
+    print("got success")
     # add file to table
     add_to_files_table(files_table, files_table_lock, msg["clientID"], msg["FileName"], port[:-5], True)
     m = {
@@ -435,9 +436,9 @@ def main():
 
 
         # loging changes in ports table
-        while True:
-            print(ports_table)
-            time.sleep(1)
+        # while True:
+        #     print(ports_table)
+        #     time.sleep(1)
 
         p1.join()
         p2.join()
