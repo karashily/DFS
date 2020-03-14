@@ -166,17 +166,18 @@ def add_to_files_table(files_table,lock,user_id,file_name,data_node_number,is_da
 
 def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket):
     # checking that file isn't uploaded already
-    # for i in files_table:
-    #     if(msg["FileName"] == i['file_name']):
-    #         socket.send_string("filename_exists_already")
-    #         return
-    
-    # find free port
-    ports_table_lock.acquire()
+    files_table_lock.acquire()
+    for i in files_table:
+        if(msg["FileName"] == i['file_name']):
+            socket.send_string("filename_exists_already")
+            files_table_lock.release()
+            return
+    files_table_lock.release()
 
-    port = get_free_port(ports_table, 'any')
+    # find free port
+    port = get_free_port(ports_table, ports_table_lock, 'any')
     # port = "tcp://127.0.0.1:5510"
-    ports_table_lock.release()
+    
     if(port is None):
         socket.send_string("no_free_ports")
         return
@@ -209,23 +210,27 @@ def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, so
     release_port(ports_table, ports_table_lock, port)
 
 
-def get_file_loc(files_table, filename):
+def get_file_loc(files_table, files_table_lock, filename):
+    files_table_lock.acquire()
     for i in range(len(files_table)):
         if(files_table[i]['file_name'] == filename and files_table[i]['is_data_node_alive'] == True):
+            files_table_lock.release()
             return files_table[i]['data_node_number']
+    files_table_lock.release()
 
 
-def download(files_table, ports_table, ports_table_lock, msg, socket):
+def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket):
     # find file on which datanode
-    loc = get_file_loc(files_table, msg['FileName'])
+    loc = get_file_loc(files_table, files_table_lock, msg['FileName'])
 
     if(loc is None):
         socket.send_string("file_not_found")
         return
-    ports_table_lock.acquire()
+    
     # get a free port of that machine
-    port = get_free_port(ports_table, loc)
-    ports_table_lock.release()
+    port = get_free_port(ports_table, ports_table_lock, loc)
+    
+    
     if(port is None):
         socket.send_string("no_free_ports")
         return
@@ -271,21 +276,17 @@ def process(files_table, files_table_lock, ports_table, ports_table_lock, master
             #socket.send_string(port)
             upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket)
         elif msg['Type']==0:
-            download(files_table, ports_table, ports_table_lock, msg, socket)
+            download(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket)
 
 
 
-def get_free_port(ports_table, node):
-    if(node == 'any'):
-        for i in range(len(ports_table)):
-            if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True)):
-                return ports_table[i]["ip"]
-
-    else:
-        for i in range(len(ports_table)):
-            if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and (ports_table[i]['ip'][:-5] == node)):
-                return ports_table[i]["ip"]
-
+def get_free_port(ports_table, ports_table_lock, node):
+    ports_table_lock.acquire()
+    for i in range(len(ports_table)):
+        if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and ((ports_table[i]['ip'][:-5] == node) or node == 'any')):
+            ports_table_lock.release()
+            return ports_table[i]["ip"]
+    ports_table_lock.release()
     return None
 
 
