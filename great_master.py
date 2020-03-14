@@ -8,22 +8,22 @@ import copy
 
 
 datakeepers_ips = [
-    "tcp://127.0.0.1:",
-    "tcp://127.0.0.1:",
-    "tcp://127.0.0.1:"
+    "tcp://192.168.43.23:",
+    "tcp://192.168.43.197:",
+    "tcp://192.168.43.105:"
 ]
 
 master_ports = [
-    "tcp://127.0.0.1:5500",
-    "tcp://127.0.0.1:5501",
-    "tcp://127.0.0.1:5502"
+    "tcp://192.168.43.105:5500",
+    "tcp://192.168.43.105:5501",
+    "tcp://192.168.43.105:5502"
 ]
 
-master_own_ip = "tcp://127.0.0.1:"
+master_own_ip = "tcp://192.168.43.105:"
 master_alive_port = "5400"
 
 
-ports_per_datakeeper = [1,0,0]
+ports_per_datakeeper = [3,0,0]
 
 datakeepers_ports_ips = []
 
@@ -39,7 +39,7 @@ def initialize_ports_table(ports_table, lock):
         d = {
             'ip': datakeepers_ports_ips[i],
             'free': True,
-            'alive': True,
+            'alive': False,
             'last_time_alive': datetime.datetime.now() - datetime.timedelta(seconds=5)
         }
 
@@ -248,7 +248,7 @@ def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, so
     # checking that file isn't uploaded already
     files_table_lock.acquire()
     for i in files_table:
-        if(msg["FileName"] == i['file_name']):
+        if(msg["fileName"] == i['file_name']):
             socket.send_string("filename_exists_already")
             files_table_lock.release()
             return
@@ -274,10 +274,11 @@ def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, so
     results_receiver.connect(success_port)
     success = results_receiver.recv_pyobj()
 
+    print("got success")
     # add file to table
-    add_to_files_table(files_table, files_table_lock, msg["clientID"], msg["FileName"], port[:-5], True)
+    add_to_files_table(files_table, files_table_lock, msg["clientID"], msg["fileName"], port[:-5], True)
     m = {
-        "file_name":msg["FileName"],
+        "file_name":msg["fileName"],
         "user_id":msg["clientID"]
     }
     unique_files.append(m)
@@ -306,7 +307,7 @@ def get_file_loc(files_table, files_table_lock, filename):
 
 def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket):
     # find file on which datanode
-    loc = get_file_loc(files_table, files_table_lock, msg['FileName'])
+    loc = get_file_loc(files_table, files_table_lock, msg['fileName'])
 
     if(loc is None):
         socket.send_string("file_not_found")
@@ -435,9 +436,9 @@ def main():
 
 
         # loging changes in ports table
-        while True:
-            print(ports_table)
-            time.sleep(1)
+        # while True:
+        #     print(ports_table)
+        #     time.sleep(1)
 
         p1.join()
         p2.join()
