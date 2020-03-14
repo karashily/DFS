@@ -9,7 +9,9 @@ import os
 import time
 from multiprocessing import Process
 
-connectionPort="tcp://127.0.0.1:"
+connectionPort="tcp://192.168.1.16:"
+masterport="tcp://192.168.1.15:"
+
 class DataKeeper:
     i_Am_Alive_port="5400"
     replicationPort="5200"
@@ -24,7 +26,7 @@ class DataKeeper:
  #################################       
     def HeartBeat(self):
         socket = self.context.socket(zmq.PUB)
-        socket.connect(connectionPort+self.i_Am_Alive_port)
+        socket.connect(masterport+self.i_Am_Alive_port)
         while True:
             #topic = random.randrange(9999,10005)
             messagedata = connectionPort[:-1]
@@ -67,7 +69,7 @@ class DataKeeper:
         socket = self.context.socket(zmq.PAIR)
         socket.bind(connectionPort+self.clientport)
         mastersocket = self.context.socket(zmq.PUSH)
-        mastersocket.bind(connectionPort+self.mastersuccessport) 
+        mastersocket.bind(masterport+self.mastersuccessport) 
         while True:
             message=socket.recv_pyobj()
             print("keeper  received  from client /n")
@@ -89,7 +91,7 @@ class DataKeeper:
                     mastersocket.send_pyobj(msg)
     def SendReplica(self):
         master_socket = self.context.socket(zmq.PAIR)
-        master_socket.bind(connectionPort+self.replicationPort)
+        master_socket.bind(masterport+self.replicationPort)
         #mastersocket = self.context.socket(zmq.PUSH)
         #mastersocket.bind(connectionPort+self.mastersuccessport) 
         while True:
@@ -138,12 +140,15 @@ p2 = Process(target = d2.ConnectToClient)
 p3 = Process(target = d3.ConnectToClient)
 
 h1 = Process(target = d1.HeartBeat)
+r1=Process(target=d2.SendReplica)
 h1.start()
+r1.start()
 p1.start()
 p2.start()
 p3.start()
 
 h1.join()
+r1.join()
 p1.join()
 p2.join()
 p3.join()
