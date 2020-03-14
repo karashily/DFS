@@ -35,7 +35,7 @@ class Client:
         print("client connection to keeper done /n")
         f=open(fileName,"rb")
         v=f.read()
-        uploadedVideo={'File':v,'FileName':fileName,'Type':1,'successport':self.clientSuccessPort}  #type: 1= upload   0= download
+        uploadedVideo={'File':v,'fileName':fileName,'Type':1,'successport':self.clientSuccessPort}  #type: 1= upload   0= download
         socket.send_pyobj(uploadedVideo)
         print("client:video uploaded ^_^ /n")
         f.close()
@@ -51,12 +51,12 @@ class Client:
     def DownloadFile(self,fileName,dataKeeperPort):
         socket = self.context.socket(zmq.PAIR)
         socket.connect(dataKeeperPort)
-        toBeDownloaded={'FileName':fileName,'Type':0,'successport':self.clientSuccessPort}
+        toBeDownloaded={'fileName':fileName,'Type':0,'successport':self.clientSuccessPort}
         socket.send_pyobj(toBeDownloaded)
         print("request sent... /n")
         
         downloadedVideo=socket.recv_pyobj()
-        name=downloadedVideo['FileName']
+        name=downloadedVideo['fileName']
         print(name+"/n")
         file=downloadedVideo['File']
         # Create target Directory if don't exist
@@ -89,7 +89,7 @@ class Client:
                 ports.append(rand)
         # socket.connect(IP+self.masterPort)
         
-        message={'clientID':self.ClientID,'Type':operation,'FileName':Filename}
+        message={'clientID':self.ClientID,'Type':operation,'fileName':Filename}
         socket.send_pyobj(message) #send message to master
         print("client message sent to master /n")
         dataport=socket.recv_string()#wait for port
