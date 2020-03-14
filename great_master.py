@@ -13,6 +13,12 @@ datakeepers_ips = [
     "tcp://127.0.0.1:"
 ]
 
+master_ports = [
+    "tcp://127.0.0.1:5500",
+    "tcp://127.0.0.1:5501",
+    "tcp://127.0.0.1:5502"
+]
+
 master_own_ip = "tcp://127.0.0.1:"
 master_alive_port = "5400"
 
@@ -239,10 +245,19 @@ def replicate(files_table, files_table_lock, ports_table, ports_table_lock, num_
 
 
 def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket):
-    # find free port
-    #port = get_free_port(ports_table, 'any')
-    port = "tcp://127.0.0.1:5510"
+    # checking that file isn't uploaded already
+    files_table_lock.acquire()
+    for i in files_table:
+        if(msg["FileName"] == i['file_name']):
+            socket.send_string("filename_exists_already")
+            files_table_lock.release()
+            return
+    files_table_lock.release()
 
+    # find free port
+    port = get_free_port(ports_table, ports_table_lock, 'any')
+    # port = "tcp://127.0.0.1:5510"
+    
     if(port is None):
         socket.send_string("no_free_ports")
         return
@@ -280,28 +295,32 @@ def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, so
     release_port(ports_table, ports_table_lock, port)
 
 
-def get_file_loc(files_table, filename):
+def get_file_loc(files_table, files_table_lock, filename):
+    files_table_lock.acquire()
     for i in range(len(files_table)):
         if(files_table[i]['file_name'] == filename and files_table[i]['is_data_node_alive'] == True):
+            files_table_lock.release()
             return files_table[i]['data_node_number']
+    files_table_lock.release()
 
 
-def download(files_table, ports_table, ports_table_lock, msg, socket):
+def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket):
     # find file on which datanode
-    loc = get_file_loc(files_table, msg['FileName'])
+    loc = get_file_loc(files_table, files_table_lock, msg['FileName'])
 
     if(loc is None):
         socket.send_string("file_not_found")
         return
-
+    
     # get a free port of that machine
-    port = get_free_port(ports_table, loc)
+    port = get_free_port(ports_table, ports_table_lock, loc)
+    
     
     if(port is None):
         socket.send_string("no_free_ports")
         return
     
-    print(port)
+    # print(port)
     # send not busy port to client
     acquire_port(ports_table, ports_table_lock, port)
     socket.send_string(port)
@@ -328,7 +347,7 @@ def download(files_table, ports_table, ports_table_lock, msg, socket):
 def process(files_table, files_table_lock, ports_table, ports_table_lock, master_process_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
-    socket.bind("tcp://127.0.0.1:5500")
+    socket.bind(master_process_port)
 
 
     while True:
@@ -342,21 +361,17 @@ def process(files_table, files_table_lock, ports_table, ports_table_lock, master
             #socket.send_string(port)
             upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket)
         elif msg['Type']==0:
-            download(files_table, ports_table, ports_table_lock, msg, socket)
+            download(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket)
 
 
 
-def get_free_port(ports_table, node):
-    if(node == 'any'):
-        for i in range(len(ports_table)):
-            if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True)):
-                return ports_table[i]["ip"]
-
-    else:
-        for i in range(len(ports_table)):
-            if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and (ports_table[i]['ip'][:-5] == node)):
-                return ports_table[i]["ip"]
-
+def get_free_port(ports_table, ports_table_lock, node):
+    ports_table_lock.acquire()
+    for i in range(len(ports_table)):
+        if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and ((ports_table[i]['ip'][:-5] == node) or node == 'any')):
+            ports_table_lock.release()
+            return ports_table[i]["ip"]
+    ports_table_lock.release()
     return None
 
 
@@ -395,7 +410,9 @@ def main():
         start processes
         '''
         
-        first_process = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, "5500"))
+        p1 = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, master_ports[0]))
+        p2 = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, master_ports[1]))
+        p3 = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, master_ports[2]))
         
         alive_process = Process(target=alive, args=(files_table, ports_table, files_table_lock, ports_table_lock))
         dead_process = Process(target=undertaker, args=(files_table, ports_table, files_table_lock, ports_table_lock))
@@ -405,7 +422,9 @@ def main():
         # initialize_ports.start()
         # initialize_ports.join()
 
-        first_process.start()
+        p1.start()
+        p2.start()
+        p3.start()
 
         '''
         process responsible for I am alive msgs from datakeepers
@@ -420,9 +439,9 @@ def main():
             print(ports_table)
             time.sleep(1)
 
-
-
-        first_process.join()
+        p1.join()
+        p2.join()
+        p3.join()
         alive_process.join()
         dead_process.join()
 

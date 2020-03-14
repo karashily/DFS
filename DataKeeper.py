@@ -12,6 +12,8 @@ from multiprocessing import Process
 connectionPort="tcp://127.0.0.1:"
 class DataKeeper:
     i_Am_Alive_port="5400"
+    replicationPort="5200"
+    recvReplica=""#my own ip +port
     #clientport = "5510"
     # mastersuccessport = port[:-2] + str(int(port[-2]) + 1) + port[-1]
     context = zmq.Context()
@@ -31,19 +33,18 @@ class DataKeeper:
             
  #####################################           
     def UploadFile(self,message):
-        uploadedVideo=message
-        name=uploadedVideo['FileName']
+        name=message['fileName']
         print(name+"/n")
-        file=uploadedVideo['File']
-        myfolder="keeper no. %d folder" %self.ID    
-        if not os.path.exists(myfolder):
-            os.makedirs(myfolder)
+        file=message['File']
+#        myfolder="keeper no. %d folder" %self.ID    
+#        if not os.path.exists(myfolder):
+#            os.makedirs(myfolder)
         
         # with open(os.path.join(myfolder, name), 'rb') as f:
         #     f.write(file)
         
-        filepath = os.path.join(myfolder,name)
-        f=open(filepath,'wb')
+#        filepath = os.path.join(myfolder,name)
+        f=open(name,'wb')
         f.write(file)
         f.close()
         
@@ -53,13 +54,10 @@ class DataKeeper:
     def DownloadFile(self,message,socket):
         print("d5lt el download")
         toBeDownloaded=message
-        fileName=toBeDownloaded['FileName']
-        myfolder="keeper no. %d folder" %self.ID
-        if not os.path.exists(myfolder):
-            os.makedirs(myfolder)
-        f=open(myfolder+'/'+fileName,"rb")
+        fileName=toBeDownloaded['fileName']
+        f=open(fileName,"rb")
         v=f.read()
-        downloadedVideo={'File':v,'FileName':fileName}
+        downloadedVideo={'File':v,'fileName':fileName}
         socket.send_pyobj(downloadedVideo)
         print("video downloaded ^_^ /n")
         f.close()
@@ -89,8 +87,48 @@ class DataKeeper:
                     # mastersocket.bind(connectionPort+self.mastersuccessport)
                     msg={'success':True,'successPort':clientSuccessPort}
                     mastersocket.send_pyobj(msg)
-        
-        
+    def SendReplica(self):
+        master_socket = self.context.socket(zmq.PAIR)
+        master_socket.bind(connectionPort+self.replicationPort)
+        #mastersocket = self.context.socket(zmq.PUSH)
+        #mastersocket.bind(connectionPort+self.mastersuccessport) 
+        while True:
+            #message={}
+            #while message=={}:
+            message=master_socket.recv_pyobj()
+            
+            print("keeper  received replica req  from master ")
+            ip=message['ip']
+            message['successport']=""
+            message['Type']=1
+            replica_socket=self.context.socket(zmq.PAIR)
+            replica_socket.connect(ip)
+            success=False
+            success=self.DownloadFile(message,replica_socket)
+            if(success):
+                # mastersocket = self.context.socket(zmq.PUSH)
+                # mastersocket.bind(connectionPort+self.mastersuccessport)
+                msg={'success':True,'successPort':""}#anhy port to be sent?????????
+                master_socket.send_pyobj(msg)
+######################################################
+#    def RecvReplica(self):
+#        master_socket = self.context.socket(zmq.PAIR)
+#        master_socket.bind(connectionPort+self.replicationPort)
+#        replica_socket=self.context.socket(zmq.PAIR)
+#        replica_socket.bind(self.recvReplica)
+#        while True:
+#            message={}
+#            while message=={}:
+#                message=replica_socket.recv_pyobj()#?????????????
+#            print("keeper received replica order from another keeper")
+#            success=False
+#            success=self.UploadFile(message,replica_socket)
+#            if(success):
+#                # mastersocket = self.context.socket(zmq.PUSH)
+#                # mastersocket.bind(connectionPort+self.mastersuccessport)
+#                msg={'success':True,'successPort':clientSuccessPort}#anhy port to be sent?????????
+#                mastersocket.send_pyobj(msg)
+            
 d1=DataKeeper(5,"5510")
 d2=DataKeeper(5,"5511")
 d3=DataKeeper(5,"5512")
