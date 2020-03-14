@@ -248,7 +248,7 @@ def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, so
     # checking that file isn't uploaded already
     files_table_lock.acquire()
     for i in files_table:
-        if(msg["FileName"] == i['file_name']):
+        if(msg["fileName"] == i['file_name']):
             socket.send_string("filename_exists_already")
             files_table_lock.release()
             return
@@ -276,9 +276,9 @@ def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, so
 
     print("got success")
     # add file to table
-    add_to_files_table(files_table, files_table_lock, msg["clientID"], msg["FileName"], port[:-5], True)
+    add_to_files_table(files_table, files_table_lock, msg["clientID"], msg["fileName"], port[:-5], True)
     m = {
-        "file_name":msg["FileName"],
+        "file_name":msg["fileName"],
         "user_id":msg["clientID"]
     }
     unique_files.append(m)
@@ -307,7 +307,7 @@ def get_file_loc(files_table, files_table_lock, filename):
 
 def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket):
     # find file on which datanode
-    loc = get_file_loc(files_table, files_table_lock, msg['FileName'])
+    loc = get_file_loc(files_table, files_table_lock, msg['fileName'])
 
     if(loc is None):
         socket.send_string("file_not_found")
