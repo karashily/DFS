@@ -2,6 +2,10 @@ import zmq
 from multiprocessing import Process,Value,Lock,Manager
 import datetime
 import time
+import json
+import os
+import copy
+
 
 datakeepers_ips = [
     "tcp://127.0.0.1:",
@@ -16,6 +20,8 @@ master_alive_port = "5400"
 ports_per_datakeeper = [1,0,0]
 
 datakeepers_ports_ips = []
+
+unique_files = []
 
 for j in range(3):
     for i in range(ports_per_datakeeper[j]):
@@ -156,7 +162,81 @@ def add_to_files_table(files_table,lock,user_id,file_name,data_node_number,is_da
         "is_data_node_alive" : is_data_node_alive
     }
     files_table.append(d)
+
+    with open('files.txt', 'a') as fout:
+        json.dump(copy.deepcopy(files_table), fout)
+
+    
+
     lock.release()
+
+
+def get_datakeepers_of_file(files_table,file_name):
+    datakeepers = set()
+    for i in range(len(files_table)):
+        if ((files_table[i]['file_name'] == file_name) and (files_table[i]['is_data_node_alive'] == True)):
+            datakeepers.add(files_table[i]['data_node_number'][:-5])
+    datakeepers = list(datakeepers)
+    return datakeepers
+
+def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, file, num_of_replicates):
+    datakeepers = get_datakeepers_of_file(files_table,file_name)
+    if(len(datakeepers)>=num_of_replicates):
+        return
+
+    num_of_replicates = num_of_replicates-len(datakeepers)
+
+    
+    list_dks_without_files = list(set(datakeepers_ips)-set(datakeepers))
+    i = 0
+    while ((num_of_replicates > 0) and (i < len(list_dks_without_files))):
+        port_dk_to_rep_file_on = get_free_port(ports_table, list_dks_without_files[i])
+        i += 1
+        if (port_dk_to_rep_file_on == None):
+            continue
+
+
+        #set port_dk_to_rep_file_on busy
+        acquire_port(ports_table, ports_table_lock, port_dk_to_rep_file_on)
+
+        #create msg
+        msg = {
+                "fileName":file["file_name"],
+                "ip":port_dk_to_rep_file_on
+            }
+        
+        #send msg
+        port = "5200"
+        context = zmq.Context()
+        socket = context.socket(zmq.PAIR)
+        socket.connect(datakeepers[0] + port)
+        socket.send_pyobj(msg)
+
+        # wait for success from datakeeper
+        success_port = port_dk_to_rep_file_on[:-2] + str(int(port_dk_to_rep_file_on[-2]) + 1) + port_dk_to_rep_file_on[-1]
+        context = zmq.Context()
+        results_receiver = context.socket(zmq.PULL)
+        print(success_port)
+        results_receiver.connect(success_port)
+        success = results_receiver.recv_pyobj()
+
+        # add file to table
+        add_to_files_table(files_table, files_table_lock, file["user_id"], file["file_name"], port_dk_to_rep_file_on[:-5], True)
+
+
+        #set port_dk_to_rep_file_on free
+        release_port(ports_table, ports_table_lock, port_dk_to_rep_file_on)
+
+
+        num_of_replicates -= 1
+
+
+def replicate(files_table, files_table_lock, ports_table, ports_table_lock, num_of_replicates):
+    while True:
+        for i in range(len(unique_files)):
+            replicate_file(files_table, files_table_lock, ports_table, ports_table_lock, unique_files_names[i], num_of_replicates)
+        time.sleep(5)
+
 
 def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket):
     # find free port
@@ -181,6 +261,11 @@ def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, so
 
     # add file to table
     add_to_files_table(files_table, files_table_lock, msg["clientID"], msg["FileName"], port[:-5], True)
+    m = {
+        "file_name":msg["FileName"],
+        "user_id":msg["clientID"]
+    }
+    unique_files.append(m)
     print(files_table)
 
     # send done to client
@@ -278,6 +363,9 @@ def get_free_port(ports_table, node):
 
 def main():
     with Manager() as manager:
+
+        num_of_replicates = int(input("minimum number of replicates: "))
+        
         files_table_lock = Lock()
         ports_table_lock = Lock()
 
@@ -293,6 +381,17 @@ def main():
 
 
         '''
+        initialize files table
+        '''
+        file_exists = os.path.isfile('./files.txt')    
+        if(file_exists):
+            with open('files.txt', 'rb') as fin:
+                files_table = json.load(fin)
+                files_table = manager.list(files_table)
+        else:
+            f= open("files.txt", "w+")
+
+        '''
         start processes
         '''
         
@@ -301,6 +400,7 @@ def main():
         alive_process = Process(target=alive, args=(files_table, ports_table, files_table_lock, ports_table_lock))
         dead_process = Process(target=undertaker, args=(files_table, ports_table, files_table_lock, ports_table_lock))
 
+        replicate_process = Process(target=replicate, args=(files_table, files_table_lock, ports_table, ports_table_lock, num_of_replicates))
 
         # initialize_ports.start()
         # initialize_ports.join()
