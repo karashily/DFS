@@ -10,7 +10,7 @@ import copy
 datakeepers_ips = [
     "tcp://192.168.43.23:",
     "tcp://192.168.43.197:",
-    "tcp://192.168.43.105:"
+    "tcp://192.168.43.170:"
 ]
 
 master_ports = [
@@ -23,11 +23,11 @@ master_own_ip = "tcp://192.168.43.105:"
 master_alive_port = "5400"
 
 
-ports_per_datakeeper = [3,0,0]
+ports_per_datakeeper = [3,3,3]
 
 datakeepers_ports_ips = []
 
-unique_files = []
+# unique_files = []
 
 for j in range(3):
     for i in range(ports_per_datakeeper[j]):
@@ -186,7 +186,7 @@ def get_datakeepers_of_file(files_table,file_name):
     return datakeepers
 
 def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, file, num_of_replicates):
-    datakeepers = get_datakeepers_of_file(files_table,file_name)
+    datakeepers = get_datakeepers_of_file(files_table,file['file_name'])
     if(len(datakeepers)>=num_of_replicates):
         return
 
@@ -196,12 +196,12 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
     list_dks_without_files = list(set(datakeepers_ips)-set(datakeepers))
     i = 0
     while ((num_of_replicates > 0) and (i < len(list_dks_without_files))):
-        port_dk_to_rep_file_on = get_free_port(ports_table, list_dks_without_files[i])
+        port_dk_to_rep_file_on = get_free_port(ports_table, ports_table_lock, list_dks_without_files[i])
         i += 1
         if (port_dk_to_rep_file_on == None):
             continue
 
-
+        print("hhhhh",port_dk_to_rep_file_on)
         #set port_dk_to_rep_file_on busy
         acquire_port(ports_table, ports_table_lock, port_dk_to_rep_file_on)
 
@@ -237,14 +237,19 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
         num_of_replicates -= 1
 
 
-def replicate(files_table, files_table_lock, ports_table, ports_table_lock, num_of_replicates):
+def replicate(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, num_of_replicates):
     while True:
+        print(unique_files)
+
         for i in range(len(unique_files)):
-            replicate_file(files_table, files_table_lock, ports_table, ports_table_lock, unique_files_names[i], num_of_replicates)
+            unique_files_lock.acquire()
+            replicate_file(files_table, files_table_lock, ports_table, ports_table_lock, unique_files[i], num_of_replicates)
+            unique_files_lock.release()
+            print("unique_files")
         time.sleep(5)
 
 
-def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket):
+def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, msg, socket):
     # checking that file isn't uploaded already
     files_table_lock.acquire()
     for i in files_table:
@@ -281,7 +286,9 @@ def upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, so
         "file_name":msg["fileName"],
         "user_id":msg["clientID"]
     }
+    unique_files_lock.acquire()
     unique_files.append(m)
+    unique_files_lock.release()
     print(files_table)
 
     # send done to client
@@ -345,7 +352,7 @@ def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, 
 
 
 
-def process(files_table, files_table_lock, ports_table, ports_table_lock, master_process_port):
+def process(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, master_process_port):
     context = zmq.Context()
     socket = context.socket(zmq.REP)
     socket.bind(master_process_port)
@@ -360,7 +367,7 @@ def process(files_table, files_table_lock, ports_table, ports_table_lock, master
 
         if msg['Type']==1:
             #socket.send_string(port)
-            upload(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket)
+            upload(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, msg, socket)
         elif msg['Type']==0:
             download(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket)
 
@@ -384,9 +391,11 @@ def main():
         
         files_table_lock = Lock()
         ports_table_lock = Lock()
+        unique_files_lock = Lock()
 
         files_table = manager.list()  
         ports_table = manager.list()
+        unique_files = manager.list()
 
         '''
         initialize ports table
@@ -411,14 +420,14 @@ def main():
         start processes
         '''
         
-        p1 = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, master_ports[0]))
-        p2 = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, master_ports[1]))
-        p3 = Process(target=process, args=(files_table, files_table_lock, ports_table, ports_table_lock, master_ports[2]))
+        p1 = Process(target=process, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, master_ports[0]))
+        p2 = Process(target=process, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, master_ports[1]))
+        p3 = Process(target=process, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, master_ports[2]))
         
         alive_process = Process(target=alive, args=(files_table, ports_table, files_table_lock, ports_table_lock))
         dead_process = Process(target=undertaker, args=(files_table, ports_table, files_table_lock, ports_table_lock))
 
-        replicate_process = Process(target=replicate, args=(files_table, files_table_lock, ports_table, ports_table_lock, num_of_replicates))
+        replicate_process = Process(target=replicate, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, num_of_replicates))
 
         # initialize_ports.start()
         # initialize_ports.join()
@@ -434,17 +443,19 @@ def main():
 
         dead_process.start()
 
+        replicate_process.start()
 
         # loging changes in ports table
-        # while True:
-        #     print(ports_table)
-        #     time.sleep(1)
+        while True:
+            print(ports_table)
+            time.sleep(1)
 
         p1.join()
         p2.join()
         p3.join()
         alive_process.join()
         dead_process.join()
+        replicate_process.join()
 
 
 

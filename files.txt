@@ -1,1 +1,0 @@
-[{"user_id": 0, "file_name": "1.mp4", "data_node_number": "tcp://192.168.43.23", "is_data_node_alive": true}][{"user_id": 0, "file_name": "1.mp4", "data_node_number": "tcp://192.168.43.23", "is_data_node_alive": true}, {"user_id": 1, "file_name": "door.mp4", "data_node_number": "tcp://192.168.43.23", "is_data_node_alive": true}]
