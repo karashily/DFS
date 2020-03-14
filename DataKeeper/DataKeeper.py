@@ -9,8 +9,8 @@ import os
 import time
 from multiprocessing import Process
 
-connectionPort="tcp://192.168.1.16:"
-masterport="tcp://192.168.1.15:"
+connectionPort="tcp://192.168.43.160:"
+masterport="tcp://192.168.43.105:"
 
 class DataKeeper:
     i_Am_Alive_port="5400"
@@ -31,7 +31,7 @@ class DataKeeper:
             #topic = random.randrange(9999,10005)
             messagedata = connectionPort[:-1]
             socket.send_string(messagedata)
-            time.sleep(1)
+            time.sleep(.5)
             
  #####################################           
     def UploadFile(self,message):
@@ -69,7 +69,7 @@ class DataKeeper:
         socket = self.context.socket(zmq.PAIR)
         socket.bind(connectionPort+self.clientport)
         mastersocket = self.context.socket(zmq.PUSH)
-        mastersocket.bind(masterport+self.mastersuccessport) 
+        mastersocket.bind(connectionPort+self.mastersuccessport) 
         while True:
             message=socket.recv_pyobj()
             print("keeper  received  from client /n")
@@ -91,7 +91,7 @@ class DataKeeper:
                     mastersocket.send_pyobj(msg)
     def SendReplica(self):
         master_socket = self.context.socket(zmq.PAIR)
-        master_socket.bind(masterport+self.replicationPort)
+        master_socket.bind(connectionPort+self.replicationPort)
         #mastersocket = self.context.socket(zmq.PUSH)
         #mastersocket.bind(connectionPort+self.mastersuccessport) 
         while True:
@@ -130,7 +130,7 @@ class DataKeeper:
 #                # mastersocket.bind(connectionPort+self.mastersuccessport)
 #                msg={'success':True,'successPort':clientSuccessPort}#anhy port to be sent?????????
 #                mastersocket.send_pyobj(msg)
-            
+#if __name__== '__main__':            
 d1=DataKeeper(5,"5510")
 d2=DataKeeper(5,"5511")
 d3=DataKeeper(5,"5512")
