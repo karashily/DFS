@@ -9,7 +9,9 @@ import os
 import time
 from multiprocessing import Process
 
-connectionPort="tcp://127.0.0.1:"
+connectionPort="tcp://192.168.43.160:"
+masterport="tcp://192.168.43.105:"
+
 class DataKeeper:
     i_Am_Alive_port="5400"
     replicationPort="5200"
@@ -24,12 +26,12 @@ class DataKeeper:
  #################################       
     def HeartBeat(self):
         socket = self.context.socket(zmq.PUB)
-        socket.connect(connectionPort+self.i_Am_Alive_port)
+        socket.connect(masterport+self.i_Am_Alive_port)
         while True:
             #topic = random.randrange(9999,10005)
             messagedata = connectionPort[:-1]
             socket.send_string(messagedata)
-            time.sleep(1)
+            time.sleep(.5)
             
  #####################################           
     def UploadFile(self,message):
@@ -128,7 +130,7 @@ class DataKeeper:
 #                # mastersocket.bind(connectionPort+self.mastersuccessport)
 #                msg={'success':True,'successPort':clientSuccessPort}#anhy port to be sent?????????
 #                mastersocket.send_pyobj(msg)
-            
+#if __name__== '__main__':            
 d1=DataKeeper(5,"5510")
 d2=DataKeeper(5,"5511")
 d3=DataKeeper(5,"5512")
@@ -138,12 +140,15 @@ p2 = Process(target = d2.ConnectToClient)
 p3 = Process(target = d3.ConnectToClient)
 
 h1 = Process(target = d1.HeartBeat)
+r1=Process(target=d2.SendReplica)
 h1.start()
+r1.start()
 p1.start()
 p2.start()
 p3.start()
 
 h1.join()
+r1.join()
 p1.join()
 p2.join()
 p3.join()
