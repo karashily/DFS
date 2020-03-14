@@ -9,7 +9,7 @@ import os
 import time
 from multiprocessing import Process
 
-connectionPort="tcp://192.168.43.160:"
+connectionPort="tcp://192.168.43.23:"
 masterport="tcp://192.168.43.105:"
 
 class DataKeeper:
@@ -81,6 +81,7 @@ class DataKeeper:
                     if(success):
                         msg={'success':True,'successPort':clientSuccessPort}
                         mastersocket.send_pyobj(msg)
+                        print("success message sent to master")
                         
             else:
                 success=self.DownloadFile(message,socket)
@@ -89,6 +90,7 @@ class DataKeeper:
                     # mastersocket.bind(connectionPort+self.mastersuccessport)
                     msg={'success':True,'successPort':clientSuccessPort}
                     mastersocket.send_pyobj(msg)
+                    print("success message sent to master")
     def SendReplica(self):
         master_socket = self.context.socket(zmq.PAIR)
         master_socket.bind(connectionPort+self.replicationPort)
