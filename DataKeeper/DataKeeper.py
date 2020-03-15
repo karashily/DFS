@@ -9,8 +9,8 @@ import os
 import time
 from multiprocessing import Process
 
-connectionPort="tcp://192.168.43.23:"
-masterport="tcp://192.168.43.105:"
+connectionPort="tcp://10.147.18.156:"
+masterport="tcp://10.147.18.156:"
 
 class DataKeeper:
     i_Am_Alive_port="5400"
