@@ -9,8 +9,8 @@ import os
 import time
 from multiprocessing import Process
 
-connectionPort="tcp://192.168.43.23:"
-masterport="tcp://192.168.43.105:"
+connectionPort="tcp://10.147.18.156:"
+masterport="tcp://10.147.18.156:"
 
 class DataKeeper:
     i_Am_Alive_port="5400"
@@ -55,14 +55,16 @@ class DataKeeper:
  ######################################
     def DownloadFile(self,message,socket):
         print("d5lt el download")
-        toBeDownloaded=message
-        fileName=toBeDownloaded['fileName']
+        #toBeDownloaded=message
+        fileName=message['fileName']
         f=open(fileName,"rb")
         v=f.read()
-        downloadedVideo={'File':v,'fileName':fileName}
-        socket.send_pyobj(downloadedVideo)
-        print("video downloaded ^_^ /n")
+        message['File']=v
+        #downloadedVideo={:,'fileName':fileName}
+        socket.send_pyobj(message)
+        print("video downloaded 😊 /n")
         f.close()
+        # socket.close()
         return True
  ###############################
     def ConnectToClient(self):
@@ -102,6 +104,7 @@ class DataKeeper:
             message=master_socket.recv_pyobj()
             
             print("keeper  received replica req  from master ")
+            print(message)
             ip=message['ip']
             message['successport']=""
             message['Type']=1
@@ -114,6 +117,7 @@ class DataKeeper:
                 # mastersocket.bind(connectionPort+self.mastersuccessport)
                 msg={'success':True,'successPort':""}#anhy port to be sent?????????
                 master_socket.send_pyobj(msg)
+                replica_socket.close()
 ######################################################
 #    def RecvReplica(self):
 #        master_socket = self.context.socket(zmq.PAIR)
