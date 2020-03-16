@@ -13,13 +13,14 @@ datakeepers_ips = [
     "tcp://192.168.43.170:"
 ]
 
+master_own_ip = "tcp://10.147.18.156:"
+
 master_ports = [
-    "tcp://10.147.18.156:5500",
-    "tcp://10.147.18.156:5501",
-    "tcp://10.147.18.156:5502"
+    master_own_ip+"5500",
+    master_own_ip+"5501",
+    master_own_ip+"5502"
 ]
 
-master_own_ip = "tcp://10.147.18.156:"
 master_alive_port = "5400"
 
 
