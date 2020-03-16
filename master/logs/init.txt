@@ -1,0 +1,4 @@
+Master [1584394471] datakeepers ports initialized: 
+Master [1584394471] {'ip': 'tcp://127.0.0.1:5510', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 23, 34, 26, 825553)}
+Master [1584394471] {'ip': 'tcp://127.0.0.1:5511', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 23, 34, 26, 827923)}
+Master [1584394471] {'ip': 'tcp://127.0.0.1:5512', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 23, 34, 26, 828546)}
