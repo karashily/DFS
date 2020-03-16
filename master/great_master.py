@@ -437,8 +437,8 @@ def get_free_port(ports_table, ports_table_lock, node):
     ports_table_lock.acquire()
     for i in range(len(ports_table)):
         if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and ((ports_table[i]['ip'][:-4] == node) or node == 'any')):
-            ports_table_lock.release()
             acquire_port(ports_table, ports_table_lock, ports_table[i]["ip"])
+            ports_table_lock.release()
             return ports_table[i]["ip"]
     
     ports_table_lock.release()
