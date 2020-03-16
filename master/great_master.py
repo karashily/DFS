@@ -24,7 +24,7 @@ master_ports = [
 master_alive_port = "5400"
 
 
-ports_per_datakeeper = [3,3,0]
+ports_per_datakeeper = [3,3,3]
 
 datakeepers_ports_ips = []
 
@@ -111,7 +111,7 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
         ports_table_lock.acquire()
         # print(ports_table)
         for i in range(len(ports_table)):
-            if (((datetime.datetime.now()-ports_table[i]['last_time_alive']).total_seconds() > 2) and ports_table[i]['alive'] == True):
+            if (((datetime.datetime.now()-ports_table[i]['last_time_alive']).total_seconds() > 5) and ports_table[i]['alive'] == True):
                 recently_dead_datakeepers.append(ports_table[i]['ip'])
                 d = {
                     'ip': ports_table[i]['ip'],

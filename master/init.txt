@@ -1,7 +1,10 @@
-Master [1584388085] datakeepers ports initialized: 
-Master [1584388085] {'ip': 'tcp://10.147.17.156:5510', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 21, 48, 0, 708961)}
-Master [1584388085] {'ip': 'tcp://10.147.17.156:5511', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 21, 48, 0, 709545)}
-Master [1584388085] {'ip': 'tcp://10.147.17.156:5512', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 21, 48, 0, 709634)}
-Master [1584388085] {'ip': 'tcp://10.147.17.209:5510', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 21, 48, 0, 709712)}
-Master [1584388085] {'ip': 'tcp://10.147.17.209:5511', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 21, 48, 0, 709816)}
-Master [1584388085] {'ip': 'tcp://10.147.17.209:5512', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 21, 48, 0, 709900)}
+Master [1584390179] datakeepers ports initialized: 
+Master [1584390179] {'ip': 'tcp://10.147.17.156:5510', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 22, 22, 54, 601341)}
+Master [1584390179] {'ip': 'tcp://10.147.17.156:5511', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 22, 22, 54, 603583)}
+Master [1584390179] {'ip': 'tcp://10.147.17.156:5512', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 22, 22, 54, 604202)}
+Master [1584390179] {'ip': 'tcp://10.147.17.209:5510', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 22, 22, 54, 604802)}
+Master [1584390179] {'ip': 'tcp://10.147.17.209:5511', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 22, 22, 54, 605276)}
+Master [1584390179] {'ip': 'tcp://10.147.17.209:5512', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 22, 22, 54, 605762)}
+Master [1584390179] {'ip': 'tcp://10.147.17.54:5510', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 22, 22, 54, 606272)}
+Master [1584390179] {'ip': 'tcp://10.147.17.54:5511', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 22, 22, 54, 606700)}
+Master [1584390179] {'ip': 'tcp://10.147.17.54:5512', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 22, 22, 54, 607269)}

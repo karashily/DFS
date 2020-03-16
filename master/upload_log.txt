@@ -1,27 +1,27 @@
-Master [1584388157] file: 1.mp4 will be uploaded to tcp://10.147.17.156:5511
-Master [1584388157] got success from datakeeper: tcp://10.147.17.156:5511
-Master [1584388157] sent success message to client: tcp://10.147.17.156:5300
-Master [1584388157] file: 5.mp4 will be uploaded to tcp://10.147.17.209:5511
-Master [1584388157] file: 7.mp4 will be uploaded to tcp://10.147.17.156:5512
-Master [1584388157] got success from datakeeper: tcp://10.147.17.156:5512
-Master [1584388157] sent success message to client: tcp://10.147.17.156:5306
-Master [1584388157] file: 2.mp4 will be uploaded to tcp://10.147.17.209:5512
-Master [1584388164] got success from datakeeper: tcp://10.147.17.209:5511
-Master [1584388166] got success from datakeeper: tcp://10.147.17.209:5512
-Master [1584388174] sent success message to client: tcp://10.147.17.156:5301
-Master [1584388174] sent success message to client: tcp://10.147.17.156:5304
-Master [1584388174] file: 3.mp4 will be uploaded to tcp://10.147.17.156:5510
-Master [1584388174] file: 6.mp4 will be uploaded to tcp://10.147.17.156:5512
-Master [1584388174] got success from datakeeper: tcp://10.147.17.156:5510
-Master [1584388174] sent success message to client: tcp://10.147.17.156:5302
-Master [1584388174] got success from datakeeper: tcp://10.147.17.156:5512
-Master [1584388174] sent success message to client: tcp://10.147.17.156:5305
-Master [1584388174] file: 4.mp4 will be uploaded to tcp://10.147.17.209:5512
-Master [1584388179] got success from datakeeper: tcp://10.147.17.209:5512
-Master [1584388179] sent success message to client: tcp://10.147.17.156:5303
-Master [1584388179] file: 9.mp4 will be uploaded to tcp://10.147.17.156:5512
-Master [1584388179] got success from datakeeper: tcp://10.147.17.156:5512
-Master [1584388179] sent success message to client: tcp://10.147.17.156:5308
-Master [1584388179] file: 8.mp4 will be uploaded to tcp://10.147.17.209:5510
-Master [1584388183] got success from datakeeper: tcp://10.147.17.209:5510
-Master [1584388208] sent success message to client: tcp://10.147.17.156:5307
+Master [1584389046] file: 1.mp4 will be uploaded to tcp://10.147.17.209:5511
+Master [1584389046] file: 2.mp4 will be uploaded to tcp://10.147.17.156:5512
+Master [1584389046] got success from datakeeper: tcp://10.147.17.156:5512
+Master [1584389046] sent success message to client: tcp://10.147.17.156:5301
+Master [1584389046] file: 3.mp4 will be uploaded to tcp://10.147.17.156:5511
+Master [1584389046] got success from datakeeper: tcp://10.147.17.156:5511
+Master [1584389046] sent success message to client: tcp://10.147.17.156:5302
+Master [1584389046] file: 7.mp4 will be uploaded to tcp://10.147.17.54:5511
+Master [1584389046] file: 6.mp4 will be uploaded to tcp://10.147.17.209:5512
+Master [1584389054] got success from datakeeper: tcp://10.147.17.209:5511
+Master [1584389056] got success from datakeeper: tcp://10.147.17.54:5511
+Master [1584389059] got success from datakeeper: tcp://10.147.17.209:5512
+Master [1584389077] sent success message to client: tcp://10.147.17.156:5306
+Master [1584389077] sent success message to client: tcp://10.147.17.156:5305
+Master [1584389077] sent success message to client: tcp://10.147.17.156:5300
+Master [1584389077] file: 8.mp4 will be uploaded to tcp://10.147.17.156:5510
+Master [1584389077] file: 5.mp4 will be uploaded to tcp://10.147.17.54:5512
+Master [1584389077] got success from datakeeper: tcp://10.147.17.156:5510
+Master [1584389077] sent success message to client: tcp://10.147.17.156:5307
+Master [1584389077] file: 9.mp4 will be uploaded to tcp://10.147.17.156:5511
+Master [1584389077] got success from datakeeper: tcp://10.147.17.156:5511
+Master [1584389077] sent success message to client: tcp://10.147.17.156:5308
+Master [1584389081] got success from datakeeper: tcp://10.147.17.54:5512
+Master [1584389081] sent success message to client: tcp://10.147.17.156:5304
+Master [1584389081] file: 4.mp4 will be uploaded to tcp://10.147.17.156:5510
+Master [1584389081] got success from datakeeper: tcp://10.147.17.156:5510
+Master [1584389081] sent success message to client: tcp://10.147.17.156:5303
