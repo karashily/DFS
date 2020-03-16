@@ -8,8 +8,8 @@ import copy
 
 
 datakeepers_ips = [
-    "tcp://10.147.18.209:",
     "tcp://10.147.18.156:",
+    "tcp://10.147.18.209:",
     "tcp://192.168.43.170:"
 ]
 
@@ -23,7 +23,7 @@ master_own_ip = "tcp://10.147.18.156:"
 master_alive_port = "5400"
 
 
-ports_per_datakeeper = [3,3,0]
+ports_per_datakeeper = [3,0,0]
 
 datakeepers_ports_ips = []
 
@@ -61,28 +61,32 @@ def alive(files_table, ports_table, files_table_lock, ports_table_lock):
         ports_table_lock.acquire()
         for i in range(len(ports_table)):
             if (ports_table[i]['ip'][:-5] == d):
-                d = {
+                # print(ports_table)
+                d1 = {
                     'ip': ports_table[i]['ip'],
                     'free': ports_table[i]['free'],
                     'alive': True,
                     'last_time_alive': datetime.datetime.now()
                 }
-                ports_table.append(d)
+                ports_table.append(d1)
                 ports_table.remove(ports_table[i])
         ports_table_lock.release()
 
         # Update Files table
         files_table_lock.acquire()
         for i in range(len(files_table)):
-            if (files_table[i]['data_node_number'][:-5] == d):
-                d = {
-                    "user_id" : files_table[j]['user_id'],
-                    "file_name" : files_table[j]['file_name'],
-                    "data_node_number" : files_table[j]['data_node_number'],
+            if ((files_table[i]['data_node_number'] == d)and (files_table[i]['is_data_node_alive'] == False)):
+                print(d,files_table[i]['data_node_number'])
+                d2 = {
+                    "user_id" : files_table[i]['user_id'],
+                    "file_name" : files_table[i]['file_name'],
+                    "data_node_number" : files_table[i]['data_node_number'],
                     "is_data_node_alive" : True
                 }
-                files_table.append(d)
-                files_table.remove(files_table(j))
+                files_table.append(d2)
+                files_table.remove(files_table[i])
+                with open('files.txt', 'w') as fout:
+                    json.dump(copy.deepcopy(files_table), fout)
         files_table_lock.release()
 
         # time.sleep(1)
@@ -105,13 +109,14 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
                 }
                 ports_table.append(d)
                 ports_table.remove(ports_table[i])
+                
         ports_table_lock.release()
 
         # Update files Table
         files_table_lock.acquire()
         for i in range(len(recently_dead_datakeepers)):
             for j in range(len(files_table)):
-                if(files_table[j]['data_node_number'] == recently_dead_datakeepers[i]):
+                if(files_table[j]['data_node_number'] == recently_dead_datakeepers[i][:-5]):
                     d = {
                         "user_id" : files_table[j]['user_id'],
                         "file_name" : files_table[j]['file_name'],
@@ -119,10 +124,16 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
                         "is_data_node_alive" : False
                     }
                     files_table.append(d)
-                    files_table.remove(files_table(j))
+                    files_table.remove(files_table[j])
+                    # print("data keeper %s has died" % recently_dead_datakeepers[i])
+                    with open('files.txt', 'w') as fout:
+                        json.dump(copy.deepcopy(files_table), fout)
         files_table_lock.release()
 
-        # time.sleep(1)
+        
+
+
+        time.sleep(1)
 
     
 def acquire_port(ports_table, ports_table_lock, port):
@@ -169,7 +180,7 @@ def add_to_files_table(files_table,lock,user_id,file_name,data_node_number,is_da
     }
     files_table.append(d)
 
-    with open('files.txt', 'a') as fout:
+    with open('files.txt', 'w') as fout:
         json.dump(copy.deepcopy(files_table), fout)
 
     
@@ -198,7 +209,7 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
     # print("datakeepers_ips: ",datakeepers_ips)
     # print("current datakeepers: ",datakeepers)
     i = 0
-    while ((num_of_replicates > 0) and (i < len(list_dks_without_files))):
+    while ((num_of_replicates > 0) and (i < len(list_dks_without_files)) and (len(datakeepers)>0)):
         port_dk_to_rep_file_on = get_free_port(ports_table, ports_table_lock, list_dks_without_files[i])
         
         # print("3la el ip dh",list_dks_without_files[i])
@@ -426,18 +437,28 @@ def main():
         '''
         initialize files table
         '''
-        file_exists = os.path.isfile('./files.txt')    
+        file_exists = os.path.isfile('./files.txt') 
+
         if(file_exists):
-            with open('files.txt', 'rb') as fin:
-                files_table = json.load(fin)
-                files_table = manager.list(files_table)
+            if(os.stat('files.txt').st_size != 0):
+                with open('files.txt', 'rb') as fin:
+                    files_table = json.load(fin)
+                    files_table = manager.list(files_table)
         else:
             f= open("files.txt", "w+")
 
+        for i in range(len(files_table)):
+            m = {
+                    "file_name":files_table[i]["file_name"],
+                    "user_id":files_table[i]["user_id"]
+                }
+            unique_files.append(m)
+        
+        #unique_files = manager.list(s)
         '''
         start processes
         '''
-        
+        print(unique_files)
         p1 = Process(target=process, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, master_ports[0]))
         p2 = Process(target=process, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, master_ports[1]))
         p3 = Process(target=process, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, master_ports[2]))
