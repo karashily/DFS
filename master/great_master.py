@@ -8,12 +8,12 @@ import copy
 
 
 datakeepers_ips = [
-    "tcp://127.0.0.1:",
-    "tcp://127.0.0.1:",
-    "tcp://127.0.0.1:"
+    "tcp://10.147.17.156:",
+    "tcp://10.147.17.209:",
+    "tcp://10.147.17.54:"
 ]
 
-master_own_ip = "tcp://127.0.0.1:"
+master_own_ip = "tcp://10.147.17.156:"
 
 master_ports = [
     master_own_ip+"5500",
@@ -24,7 +24,7 @@ master_ports = [
 master_alive_port = "5400"
 
 
-ports_per_datakeeper = [3,0,0]
+ports_per_datakeeper = [3,3,0]
 
 datakeepers_ports_ips = []
 
@@ -166,12 +166,7 @@ def acquire_port(ports_table, ports_table_lock, port):
                 'last_time_alive': ports_table[i]['last_time_alive']
             }
             ports_table.remove(ports_table[i])
-<<<<<<< HEAD
-            print("hahahah: ",d)
-            print("ggggggg: ",ports_table)
-=======
             ports_table.append(d)
->>>>>>> 4dd002dc5f12d10982b216d293cd454d98d342c7
 
             
             #log
@@ -181,12 +176,8 @@ def acquire_port(ports_table, ports_table_lock, port):
             ports_log.close()
 
             break
-<<<<<<< HEAD
     # ports_table_lock.release()
 
-=======
-    
->>>>>>> 4dd002dc5f12d10982b216d293cd454d98d342c7
 
 
 def release_port(ports_table, ports_table_lock, port):
@@ -266,7 +257,7 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
 
         #log
         replicate_log = open("replicate_log.txt", "a")
-        replicate_log.write("Master ["+str(int(time.time()))+"] "+"file: "+msg["fileName"]+ " will be replicated to "+msg["ip"]+" from "+datakeepers[0] + port+"\n")
+        replicate_log.write("Master ["+str(int(time.time()))+"] "+"file: "+msg["fileName"]+ " will be replicated to "+msg["ip"]+" from "+datakeepers[0] +"\n")
         replicate_log.close()
 
         
@@ -559,5 +550,4 @@ def main():
 
 
 main()
-
 

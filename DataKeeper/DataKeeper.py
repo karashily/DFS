@@ -9,8 +9,8 @@ import os
 import time
 from multiprocessing import Process
 
-connectionPort="tcp://127.0.0.1:"
-masterport="tcp://127.0.0.1:"
+connectionPort="tcp://10.147.17.156:"
+masterport="tcp://10.147.17.156:"
 
 class DataKeeper:
     i_Am_Alive_port="5400"
@@ -73,6 +73,7 @@ class DataKeeper:
         mastersocket = self.context.socket(zmq.PUSH)
         mastersocket.bind(connectionPort+self.mastersuccessport) 
         while True:
+            print("my client port: ",self.clientport)
             message=socket.recv_pyobj()
             print("keeper  received  from client /n")
             Type=message['Type']

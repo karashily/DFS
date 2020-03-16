@@ -13,12 +13,12 @@ import threading
 import os
 from multiprocessing import Process,Value,Lock,Manager
  
-IP = "tcp://127.0.0.1:"
+IP = "tcp://10.147.17.156:"
 
 masterPorts = [
-    "tcp://127.0.0.1:5500", 
-    "tcp://127.0.0.1:5501", 
-    "tcp://127.0.0.1:5502"
+    "tcp://10.147.17.156:5500", 
+    "tcp://10.147.17.156:5501", 
+    "tcp://10.147.17.156:5502"
     ]
 
 class Client:
@@ -53,7 +53,7 @@ class Client:
         socket.connect(dataKeeperPort)
         toBeDownloaded={'fileName':fileName,'Type':0,'successport':self.clientSuccessPort}
         socket.send_pyobj(toBeDownloaded)
-        print("client {}: download request sent...".format(self.ClientID))
+        print("client {}: download request sent on ".format(self.ClientID) + self.clientSuccessPort)
         
         downloadedVideo=socket.recv_pyobj()
         name=downloadedVideo['fileName']
@@ -148,11 +148,8 @@ for i in range(clientsNum):
     
 for i in clients:
     i.start()
-<<<<<<< HEAD
+    #i.join()
     time.sleep(0.01)
-=======
-    # time.sleep(1)
->>>>>>> 4dd002dc5f12d10982b216d293cd454d98d342c7
 
 for i in clients:
     i.join()
