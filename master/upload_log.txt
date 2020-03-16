@@ -1,3 +1,31 @@
+<<<<<<< HEAD
 Master [1584375684] file: 1.mp4 will be uploaded to tcp://10.147.18.156:5510
 Master [1584375684] got success from datakeeper: tcp://10.147.18.156:5510
 Master [1584375684] sent success message to client: tcp://10.147.18.156:5300
+=======
+Master [1584332593.0587714] file: 1.mp4 will be uploaded to tcp://10.147.18.156:5510
+Master [1584332593.0600536] file: 4.mp4 will be uploaded to tcp://10.147.18.156:5511
+Master [1584332593.0606632] got success from datakeeper: tcp://10.147.18.156:5510
+Master [1584332593.0614307] sent success message to client: tcp://10.147.18.156:5300
+Master [1584332593.065567] got success from datakeeper: tcp://10.147.18.156:5511
+Master [1584332593.0662956] sent success message to client: tcp://10.147.18.156:5303
+Master [1584332593.1887872] file: 3.mp4 will be uploaded to tcp://10.147.18.156:5510
+Master [1584332593.190897] got success from datakeeper: tcp://10.147.18.156:5510
+Master [1584332593.1927922] sent success message to client: tcp://10.147.18.156:5302
+Master [1584332593.1951852] file: 2.mp4 will be uploaded to tcp://10.147.18.156:5512
+Master [1584332593.2000215] got success from datakeeper: tcp://10.147.18.156:5512
+Master [1584332593.2007625] sent success message to client: tcp://10.147.18.156:5301
+Master [1584332636.8661423] file: 5.mp4 will be uploaded to tcp://10.147.18.156:5511
+Master [1584332636.8674054] file: 6.mp4 will be uploaded to tcp://10.147.18.156:5512
+Master [1584332636.8676817] got success from datakeeper: tcp://10.147.18.156:5511
+Master [1584332636.8685338] sent success message to client: tcp://10.147.18.156:5300
+Master [1584332636.8740513] got success from datakeeper: tcp://10.147.18.156:5512
+Master [1584332636.8748994] sent success message to client: tcp://10.147.18.156:5301
+Master [1584332637.0679774] file: 7.mp4 will be uploaded to tcp://10.147.18.156:5510
+Master [1584368830] file: 1.mp4 will be uploaded to tcp://127.0.0.1:5511
+Master [1584368830] got success from datakeeper: tcp://127.0.0.1:5511
+Master [1584368830] sent success message to client: tcp://127.0.0.1:5300
+Master [1584370005] file: 1.mp4 will be uploaded to tcp://127.0.0.1:5511
+Master [1584370005] got success from datakeeper: tcp://127.0.0.1:5511
+Master [1584370005] sent success message to client: tcp://127.0.0.1:5300
+>>>>>>> 4dd002dc5f12d10982b216d293cd454d98d342c7

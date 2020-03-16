@@ -1,4 +1,11 @@
+<<<<<<< HEAD
 Master [1584375671] datakeepers ports initialized: 
 Master [1584375671] {'ip': 'tcp://10.147.18.156:5510', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 18, 21, 6, 376627)}
 Master [1584375671] {'ip': 'tcp://10.147.18.156:5511', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 18, 21, 6, 378671)}
 Master [1584375671] {'ip': 'tcp://10.147.18.156:5512', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 18, 21, 6, 379284)}
+=======
+Master [1584376556] datakeepers ports initialized: 
+Master [1584376556] {'ip': 'tcp://127.0.0.1:5510', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 18, 35, 51, 669866)}
+Master [1584376556] {'ip': 'tcp://127.0.0.1:5511', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 18, 35, 51, 673817)}
+Master [1584376556] {'ip': 'tcp://127.0.0.1:5512', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 18, 35, 51, 674608)}
+>>>>>>> 4dd002dc5f12d10982b216d293cd454d98d342c7

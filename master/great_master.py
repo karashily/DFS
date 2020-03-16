@@ -8,12 +8,12 @@ import copy
 
 
 datakeepers_ips = [
-    "tcp://10.147.18.156:",
-    "tcp://10.147.18.209:",
-    "tcp://192.168.43.170:"
+    "tcp://127.0.0.1:",
+    "tcp://127.0.0.1:",
+    "tcp://127.0.0.1:"
 ]
 
-master_own_ip = "tcp://10.147.18.156:"
+master_own_ip = "tcp://127.0.0.1:"
 
 master_ports = [
     master_own_ip+"5500",
@@ -165,10 +165,13 @@ def acquire_port(ports_table, ports_table_lock, port):
                 'alive': ports_table[i]['alive'],
                 'last_time_alive': ports_table[i]['last_time_alive']
             }
-            ports_table.append(d)
             ports_table.remove(ports_table[i])
+<<<<<<< HEAD
             print("hahahah: ",d)
             print("ggggggg: ",ports_table)
+=======
+            ports_table.append(d)
+>>>>>>> 4dd002dc5f12d10982b216d293cd454d98d342c7
 
             
             #log
@@ -178,8 +181,12 @@ def acquire_port(ports_table, ports_table_lock, port):
             ports_log.close()
 
             break
+<<<<<<< HEAD
     # ports_table_lock.release()
 
+=======
+    
+>>>>>>> 4dd002dc5f12d10982b216d293cd454d98d342c7
 
 
 def release_port(ports_table, ports_table_lock, port):
@@ -193,9 +200,9 @@ def release_port(ports_table, ports_table_lock, port):
                 'alive': ports_table[i]['alive'],
                 'last_time_alive': ports_table[i]['last_time_alive']
             }
-            ports_table.append(d)
             ports_table.remove(ports_table[i])
-
+            ports_table.append(d)
+            
             #log
             ports_log = open("ports_log.txt", "a")
             ports_log.write("Master ["+str(int(time.time()))+"] "+"port# "+port+" is released"+"\n")
@@ -313,6 +320,7 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
     port = get_free_port(ports_table, ports_table_lock, 'any')
     print("awl ma gbth",port)
     
+    
     if(port is None):
         socket.send_string("no_free_ports")
         return
@@ -388,6 +396,8 @@ def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, 
     # get a free port of that machine
     port = get_free_port(ports_table, ports_table_lock, loc)
     
+    # print(port)
+
     if(port is None):
         socket.send_string("no_free_ports")
         return
@@ -447,10 +457,13 @@ def process(files_table, files_table_lock, unique_files, unique_files_lock, port
 def get_free_port(ports_table, ports_table_lock, node):
     ports_table_lock.acquire()
     for i in range(len(ports_table)):
+        # print(ports_table[i])
         if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and ((ports_table[i]['ip'][:-4] == node) or node == 'any')):
+            port = copy.deepcopy(ports_table[i]['ip'])
             acquire_port(ports_table, ports_table_lock, ports_table[i]["ip"])
             ports_table_lock.release()
-            return ports_table[i]["ip"]
+            # print("found port", ports_table[i]["ip"])
+            return port
     
     ports_table_lock.release()
     return None
