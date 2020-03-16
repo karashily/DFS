@@ -1,3 +1,0 @@
-Master [1584393174] file: 1.mp4 will be downloaded from tcp://127.0.0.1:5510
-Master [1584393174] got success from datakeeper: tcp://127.0.0.1:5510
-Master [1584393174] sent success message to client: tcp://127.0.0.1:5300

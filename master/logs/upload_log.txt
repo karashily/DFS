@@ -1,6 +1,0 @@
-Master [1584392415] file: 1.mp4 will be uploaded to tcp://127.0.0.1:5510
-Master [1584392415] got success from datakeeper: tcp://127.0.0.1:5510
-Master [1584392415] sent success message to client: tcp://127.0.0.1:5300
-Master [1584393441] file: 1.mp4 will be uploaded to tcp://127.0.0.1:5510
-Master [1584393441] got success from datakeeper: tcp://127.0.0.1:5510
-Master [1584393441] sent success message to client: tcp://127.0.0.1:5300
