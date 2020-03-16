@@ -17,3 +17,9 @@ Master [1584332636.8685338] sent success message to client: tcp://10.147.18.156:
 Master [1584332636.8740513] got success from datakeeper: tcp://10.147.18.156:5512
 Master [1584332636.8748994] sent success message to client: tcp://10.147.18.156:5301
 Master [1584332637.0679774] file: 7.mp4 will be uploaded to tcp://10.147.18.156:5510
+Master [1584368830] file: 1.mp4 will be uploaded to tcp://127.0.0.1:5511
+Master [1584368830] got success from datakeeper: tcp://127.0.0.1:5511
+Master [1584368830] sent success message to client: tcp://127.0.0.1:5300
+Master [1584370005] file: 1.mp4 will be uploaded to tcp://127.0.0.1:5511
+Master [1584370005] got success from datakeeper: tcp://127.0.0.1:5511
+Master [1584370005] sent success message to client: tcp://127.0.0.1:5300

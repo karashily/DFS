@@ -13,12 +13,12 @@ import threading
 import os
 from multiprocessing import Process,Value,Lock,Manager
  
-IP = "tcp://10.147.18.156:"
+IP = "tcp://127.0.0.1:"
 
 masterPorts = [
-    "tcp://10.147.18.156:5500", 
-    "tcp://10.147.18.156:5501", 
-    "tcp://10.147.18.156:5502"
+    "tcp://127.0.0.1:5500", 
+    "tcp://127.0.0.1:5501", 
+    "tcp://127.0.0.1:5502"
     ]
 
 class Client:
@@ -32,32 +32,31 @@ class Client:
     def UploadFile(self,fileName,portUpload):
         socket = self.context.socket(zmq.PAIR)
         socket.connect(portUpload)
-        print("client connection to keeper done /n")
+        print("client {}: connection to keeper done".format(self.ClientID))
         f=open(fileName,"rb")
         v=f.read()
         uploadedVideo={'File':v,'fileName':fileName,'Type':1,'successport':self.clientSuccessPort}  #type: 1= upload   0= download
         socket.send_pyobj(uploadedVideo)
-        print("client:video uploaded ^_^ /n")
+        print("client {}:video uploaded ^_^".format(self.ClientID))
         f.close()
         mastersocket=self.context.socket(zmq.PAIR)
         mastersocket.bind(self.clientSuccessPort)
-        print("client waiting success message from  master /n")
+        print("client {}: waiting success message from  master".format(self.ClientID))
         success=mastersocket.recv_pyobj()
         if(success==True):
             socket.close()
             mastersocket.close()
-            print("client no. %s left successfully" %self.ClientID)
+            print("client %s: left successfully" %self.ClientID)
  ########################################################       
     def DownloadFile(self,fileName,dataKeeperPort):
         socket = self.context.socket(zmq.PAIR)
         socket.connect(dataKeeperPort)
         toBeDownloaded={'fileName':fileName,'Type':0,'successport':self.clientSuccessPort}
         socket.send_pyobj(toBeDownloaded)
-        print("request sent... /n")
+        print("client {}: download request sent...".format(self.ClientID))
         
         downloadedVideo=socket.recv_pyobj()
         name=downloadedVideo['fileName']
-        print(name+"/n")
         file=downloadedVideo['File']
         # Create target Directory if don't exist
         myfolder="client no. %s folder" %self.ClientID
@@ -66,15 +65,15 @@ class Client:
         f = open(myfolder+"/"+fileName, "wb")
         f.write(file)
         f.close()
-        print("video %s added from client no %s successfully ^_^ /n" %(name,self.ClientID))
+        print("client %s: video %s added successfully ^_^" %(self.ClientID, name))
         mastersocket=self.context.socket(zmq.PAIR)
         mastersocket.bind(self.clientSuccessPort)
-        print("client waiting success message from  master /n")
+        print("client {}: waiting success message from master".format(self.ClientID))
         success=mastersocket.recv_pyobj()
         if(success==True):
             socket.close()
             mastersocket.close()
-            print("client no. %s left successfully" %self.ClientID)
+            print("client %s: left successfully" %self.ClientID)
 #####################################################
     def connectToMaster(self,operation,Filename):
         #connect to master
@@ -85,31 +84,31 @@ class Client:
             rand = random.randint(0, len(masterPorts) - 1)
             if rand not in ports:
                 socket.connect(masterPorts[rand])
-                print("client {} connected to port {}".format(self.ClientID, masterPorts[rand]))
+                print("client {}: connected to port {}".format(self.ClientID, masterPorts[rand]))
                 ports.append(rand)
         # socket.connect(IP+self.masterPort)
         
         message={'clientID':self.ClientID,'Type':operation,'fileName':Filename}
         socket.send_pyobj(message) #send message to master
-        print("client message sent to master /n")
+        print("client {}: operation {} sent to master".format(self.ClientID, operation))
         dataport=socket.recv_string()#wait for port
         while(dataport == 'no_free_ports'):
-            print("All datakeepers ports busy.... Trying again...")
+            print("client {}: All datakeepers ports busy.... Trying again...".format(self.ClientID))
             socket.send_pyobj(message) #send message to master
-            print("client message sent to master /n")
+            print("client {}: operation {} sent to master".format(self.ClientID, operation))
             dataport=socket.recv_string()#wait for port
         
         if(dataport == 'file_not_found'):
-            print('Fatal Error: Requested File Not Found....')
+            print('client %s: Fatal Error: Requested File Not Found....' %self.ClientID)
             socket.close()
             return
         
         if(dataport == 'filename_exists_already'):
-            print('Fatal Error: Duplicate filename....')
+            print('client %s: Fatal Error: Duplicate filename....' %self.ClientID)
             socket.close()
             return
 
-        print("master responded to client with port {}\n".format(dataport))
+        print("client {}: master responded with port {}".format(self.ClientID, dataport))
         if(operation==1): #upload
             socket.close()
             self.UploadFile(Filename,dataport)
@@ -138,9 +137,9 @@ for i in range(clientsNum):
             operation = 1
             rightOperation = False
         else:
-            print("Wrong Operation...!")
+            print("client {}: Wrong Operation...!".format(id))
 
-    fileName = input("please enter the filename: ")
+    fileName = input("client {}: please enter the filename: ".format(id))
 
     c = Client(id, i)
     p = Process(target=c.connectToMaster, args=(operation, fileName))
@@ -149,6 +148,7 @@ for i in range(clientsNum):
     
 for i in clients:
     i.start()
+    # time.sleep(1)
 
 for i in clients:
     i.join()
