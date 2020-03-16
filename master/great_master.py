@@ -154,7 +154,6 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
     
 def acquire_port(ports_table, ports_table_lock, port):
     # Update ports table
-    ports_table_lock.acquire()
     for i in range(len(ports_table)):
         if(ports_table[i]['ip'] == port):
             d = {
@@ -173,7 +172,6 @@ def acquire_port(ports_table, ports_table_lock, port):
             ports_log.close()
 
             break
-    ports_table_lock.release()
 
 
 def release_port(ports_table, ports_table_lock, port):
@@ -243,9 +241,6 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
         if (port_dk_to_rep_file_on == None):
             continue
 
-        #set port_dk_to_rep_file_on busy
-        acquire_port(ports_table, ports_table_lock, port_dk_to_rep_file_on)
-
         #create msg
         msg = {
                 "fileName":file["file_name"],
@@ -314,7 +309,6 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
     
 
     # send port to client
-    acquire_port(ports_table, ports_table_lock, port)
     socket.send_string(port)
 
 
@@ -388,7 +382,6 @@ def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, 
         return
     
     # send not busy port to client
-    acquire_port(ports_table, ports_table_lock, port)
     socket.send_string(port)
 
     #log
@@ -443,10 +436,11 @@ def process(files_table, files_table_lock, unique_files, unique_files_lock, port
 def get_free_port(ports_table, ports_table_lock, node):
     ports_table_lock.acquire()
     for i in range(len(ports_table)):
-
         if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and ((ports_table[i]['ip'][:-4] == node) or node == 'any')):
             ports_table_lock.release()
+            acquire_port(ports_table, ports_table_lock, ports_table[i]["ip"])
             return ports_table[i]["ip"]
+    
     ports_table_lock.release()
     return None
 
