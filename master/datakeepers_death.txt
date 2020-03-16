@@ -1,3 +1,0 @@
-Master [1584390238] data keeper tcp://10.147.17.209:5510 has died 
-Master [1584390238] data keeper tcp://10.147.17.209:5511 has died 
-Master [1584390238] data keeper tcp://10.147.17.54:5512 has died 

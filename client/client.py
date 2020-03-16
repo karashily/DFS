@@ -13,12 +13,12 @@ import threading
 import os
 from multiprocessing import Process,Value,Lock,Manager
  
-IP = "tcp://10.147.17.156:"
+IP = "tcp://127.0.0.1:"
 
 masterPorts = [
-    "tcp://10.147.17.156:5500", 
-    "tcp://10.147.17.156:5501", 
-    "tcp://10.147.17.156:5502"
+    "tcp://127.0.0.1:5500", 
+    "tcp://127.0.0.1:5501", 
+    "tcp://127.0.0.1:5502"
     ]
 
 class Client:
