@@ -149,6 +149,7 @@ for i in range(clientsNum):
     
 for i in clients:
     i.start()
+    time.sleep(0.01)
 
 for i in clients:
     i.join()

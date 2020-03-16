@@ -1,3 +1,2 @@
-Master [1584365203] port# :5511 on ip: tcp://10.147.18.156: is requested
-Master [1584365203] port# :5511 on ip: tcp://10.147.18.156: is requested
-Master [1584365203] port# :5510 on ip: tcp://10.147.18.156: is requested
+Master [1584375684] port# tcp://10.147.18.156:5511 is requested
+Master [1584375684] port# tcp://10.147.18.156:5510 is released

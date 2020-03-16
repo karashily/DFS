@@ -155,6 +155,8 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
     
 def acquire_port(ports_table, ports_table_lock, port):
     # Update ports table
+    # ports_table_lock.acquire()
+    print("acquire: ",port)
     for i in range(len(ports_table)):
         if(ports_table[i]['ip'] == port):
             d = {
@@ -165,14 +167,19 @@ def acquire_port(ports_table, ports_table_lock, port):
             }
             ports_table.append(d)
             ports_table.remove(ports_table[i])
+            print("hahahah: ",d)
+            print("ggggggg: ",ports_table)
 
+            
             #log
             ports_log = open("ports_log.txt", "a")
-            ports_log.write("Master ["+str(int(time.time()))+"] "+"port# "+port[-5:]+" on ip: "+port[:-4]+" is requested"+"\n")
+            ports_log.write("Master ["+str(int(time.time()))+"] "+"port# "+port+" is requested"+"\n")
             # ports_log.write(str(ports_table)+"\n")
             ports_log.close()
 
             break
+    # ports_table_lock.release()
+
 
 
 def release_port(ports_table, ports_table_lock, port):
@@ -191,7 +198,8 @@ def release_port(ports_table, ports_table_lock, port):
 
             #log
             ports_log = open("ports_log.txt", "a")
-            ports_log.write("Master ["+str(int(time.time()))+"] "+"port# "+port[-5:]+" on ip: "+port[:-4]+" is released"+"\n")
+            ports_log.write("Master ["+str(int(time.time()))+"] "+"port# "+port+" is released"+"\n")
+
             # ports_log.write(str(ports_table)+"\n")
             ports_log.close()
 
@@ -303,6 +311,7 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
 
     # find free port
     port = get_free_port(ports_table, ports_table_lock, 'any')
+    print("awl ma gbth",port)
     
     if(port is None):
         socket.send_string("no_free_ports")
@@ -354,6 +363,7 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
     upload_log.write("Master ["+str(int(time.time()))+"] "+"sent success message to client: "+ success_port_of_client+"\n")
     upload_log.close()
 
+    print("abl ma a3ml release",port)
     release_port(ports_table, ports_table_lock, port)
 
 

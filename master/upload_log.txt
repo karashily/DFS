@@ -1,7 +1,3 @@
-Master [1584365203] file: 1.mp4 will be uploaded to tcp://10.147.18.156:5510
-Master [1584365203] file: 2.mp4 will be uploaded to tcp://10.147.18.156:5512
-Master [1584365203] file: 4.mp4 will be uploaded to tcp://10.147.18.156:5512
-Master [1584365203] got success from datakeeper: tcp://10.147.18.156:5512
-Master [1584365203] sent success message to client: tcp://10.147.18.156:5301
-Master [1584365203] got success from datakeeper: tcp://10.147.18.156:5510
-Master [1584365203] sent success message to client: tcp://10.147.18.156:5300
+Master [1584375684] file: 1.mp4 will be uploaded to tcp://10.147.18.156:5510
+Master [1584375684] got success from datakeeper: tcp://10.147.18.156:5510
+Master [1584375684] sent success message to client: tcp://10.147.18.156:5300
