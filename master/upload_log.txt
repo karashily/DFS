@@ -1,0 +1,6 @@
+file: 1.mp4 will be uploaded to tcp://10.147.18.156:5510
+got success from datakeeper: tcp://10.147.18.156:5510
+file: 2.mp4 will be uploaded to tcp://10.147.18.156:5511
+sent success message to client: tcp://10.147.18.156:5300
+got success from datakeeper: tcp://10.147.18.156:5511
+sent success message to client: tcp://10.147.18.156:5301

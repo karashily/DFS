@@ -1,0 +1,4 @@
+datakeepers ports initialized: 
+{'ip': 'tcp://10.147.18.156:5510', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 5, 32, 14, 353452)}
+{'ip': 'tcp://10.147.18.156:5511', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 5, 32, 14, 354116)}
+{'ip': 'tcp://10.147.18.156:5512', 'free': True, 'alive': False, 'last_time_alive': datetime.datetime(2020, 3, 16, 5, 32, 14, 354305)}

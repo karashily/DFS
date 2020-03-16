@@ -1,0 +1,19 @@
+file: 1.mp4 will be downloaded from tcp://10.147.18.156:5512
+got success from datakeeper: tcp://10.147.18.156:5512
+sent success message to client: tcp://10.147.18.156:5300
+file: 2.mp4 will be downloaded from tcp://10.147.18.156:5510
+got success from datakeeper: tcp://10.147.18.156:5510
+sent success message to client: tcp://10.147.18.156:5301
+file: 1.mp4 will be downloaded from tcp://10.147.18.156:5512
+file: 1.mp4 will be downloaded from tcp://10.147.18.156:5512
+got success from datakeeper: tcp://10.147.18.156:5512
+sent success message to client: tcp://10.147.18.156:5300
+file: 1.mp4 will be downloaded from tcp://10.147.18.156:5511
+got success from datakeeper: tcp://10.147.18.156:5511
+sent success message to client: tcp://10.147.18.156:5304
+file: 2.mp4 will be downloaded from tcp://10.147.18.156:5512
+got success from datakeeper: tcp://10.147.18.156:5512
+sent success message to client: tcp://10.147.18.156:5303
+file: 2.mp4 will be downloaded from tcp://10.147.18.156:5510
+got success from datakeeper: tcp://10.147.18.156:5510
+sent success message to client: tcp://10.147.18.156:5302

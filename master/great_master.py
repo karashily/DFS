@@ -36,6 +36,11 @@ for j in range(3):
 
 
 def initialize_ports_table(ports_table, lock):
+    #log
+    init = open("init.txt", "a")
+    init.write("datakeepers ports initialized: \n")
+    init.close()
+
     for i in range(len(datakeepers_ports_ips)):
         d = {
             'ip': datakeepers_ports_ips[i],
@@ -44,9 +49,15 @@ def initialize_ports_table(ports_table, lock):
             'last_time_alive': datetime.datetime.now() - datetime.timedelta(seconds=5)
         }
 
+        #log
+        init = open("init.txt", "a")
+        init.write(str(d)+'\n')
+        init.close()
+
         lock.acquire()
         ports_table.append(d)
         lock.release()  
+
 
 
 def alive(files_table, ports_table, files_table_lock, ports_table_lock):
@@ -77,7 +88,7 @@ def alive(files_table, ports_table, files_table_lock, ports_table_lock):
         files_table_lock.acquire()
         for i in range(len(files_table)):
             if ((files_table[i]['data_node_number'] == d)and (files_table[i]['is_data_node_alive'] == False)):
-                print(d,files_table[i]['data_node_number'])
+                # print(d,files_table[i]['data_node_number'])
                 d2 = {
                     "user_id" : files_table[i]['user_id'],
                     "file_name" : files_table[i]['file_name'],
@@ -90,7 +101,6 @@ def alive(files_table, ports_table, files_table_lock, ports_table_lock):
                     json.dump(copy.deepcopy(files_table), fout)
         files_table_lock.release()
 
-        # time.sleep(1)
 
 
 def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
@@ -110,6 +120,12 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
                 }
                 ports_table.append(d)
                 ports_table.remove(ports_table[i])
+
+
+                #log
+                datakeepers_death = open("datakeepers_death.txt", "a")
+                datakeepers_death.write("data keeper "+ports_table[i]['ip']+" has died \n")
+                datakeepers_death.close()
                 
         ports_table_lock.release()
 
@@ -126,7 +142,6 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
                     }
                     files_table.append(d)
                     files_table.remove(files_table[j])
-                    # print("data keeper %s has died" % recently_dead_datakeepers[i])
                     with open('files.txt', 'w') as fout:
                         json.dump(copy.deepcopy(files_table), fout)
         files_table_lock.release()
@@ -134,7 +149,7 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
         
 
 
-        time.sleep(1)
+        # time.sleep(1)
 
     
 def acquire_port(ports_table, ports_table_lock, port):
@@ -150,6 +165,12 @@ def acquire_port(ports_table, ports_table_lock, port):
             }
             ports_table.append(d)
             ports_table.remove(ports_table[i])
+
+            #log
+            ports_log = open("ports_log.txt", "a")
+            ports_log.write("port# "+port[-5:]+" on ip: "+port[:-4]+" is requested"+"\n")
+            ports_log.close()
+
             break
     ports_table_lock.release()
 
@@ -167,6 +188,12 @@ def release_port(ports_table, ports_table_lock, port):
             }
             ports_table.append(d)
             ports_table.remove(ports_table[i])
+
+            #log
+            ports_log = open("ports_log.txt", "a")
+            ports_log.write("port# "+port[-5:]+" on ip: "+port[:-4]+" is released"+"\n")
+            ports_log.close()
+
             break
     ports_table_lock.release()
 
@@ -204,22 +231,16 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
 
     num_of_replicates = num_of_replicates-len(datakeepers)
 
-    # print("reps",num_of_replicates)
     list_dks_without_files = list(set(datakeepers_ips)-set(datakeepers))
-    # print("list_dks_without_files: ",list_dks_without_files)
-    # print("datakeepers_ips: ",datakeepers_ips)
-    # print("current datakeepers: ",datakeepers)
     i = 0
     while ((num_of_replicates > 0) and (i < len(list_dks_without_files)) and (len(datakeepers)>0)):
         port_dk_to_rep_file_on = get_free_port(ports_table, ports_table_lock, list_dks_without_files[i])
         
-        # print("3la el ip dh",list_dks_without_files[i])
-        # print("h3ml rep 3la dh",port_dk_to_rep_file_on)
+        
         i += 1
         if (port_dk_to_rep_file_on == None):
             continue
 
-        # print("hhhhh",port_dk_to_rep_file_on)
         #set port_dk_to_rep_file_on busy
         acquire_port(ports_table, ports_table_lock, port_dk_to_rep_file_on)
 
@@ -229,9 +250,13 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
                 "ip":port_dk_to_rep_file_on
             }
         
-        print(
-            "file: ",msg["fileName"], " will be replicated to ",msg["ip"]
-        )
+
+        #log
+        replicate_log = open("replicate_log.txt", "a")
+        replicate_log.write("file: "+msg["fileName"]+ " will be replicated to "+msg["ip"]+" from "+datakeepers[0] + port+"\n")
+        replicate_log.close()
+
+        
         
         #send msg
         port = "5200"
@@ -244,7 +269,6 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
         success_port = port_dk_to_rep_file_on[:-2] + str(int(port_dk_to_rep_file_on[-2]) + 1) + port_dk_to_rep_file_on[-1]
         context = zmq.Context()
         results_receiver = context.socket(zmq.PULL)
-        # print(success_port)
         results_receiver.connect(success_port)
         success = results_receiver.recv_pyobj()
 
@@ -261,8 +285,6 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
 
 def replicate(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, num_of_replicates):
     while True:
-        #print(unique_files)
-
         for i in range(len(unique_files)):
             unique_files_lock.acquire()
             replicate_file(files_table, files_table_lock, ports_table, ports_table_lock, unique_files[i], num_of_replicates)
@@ -283,7 +305,6 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
 
     # find free port
     port = get_free_port(ports_table, ports_table_lock, 'any')
-    # port = "tcp://127.0.0.1:5510"
     
     if(port is None):
         socket.send_string("no_free_ports")
@@ -294,18 +315,25 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
     acquire_port(ports_table, ports_table_lock, port)
     socket.send_string(port)
 
-    print(
-            "file: ",msg["fileName"], " will be uploadedd to ",port
-        )
+
+    #log
+    upload_log = open("upload_log.txt", "a")
+    upload_log.write("file: "+msg["fileName"]+ " will be uploaded to "+port+"\n")
+    upload_log.close()
+
     # wait for success from datakeeper
     success_port = port[:-2] + str(int(port[-2]) + 1) + port[-1]
     context = zmq.Context()
     results_receiver = context.socket(zmq.PULL)
-    # print(success_port)
     results_receiver.connect(success_port)
     success = results_receiver.recv_pyobj()
 
-    print("got success from datakeeper")
+
+    #log
+    upload_log = open("upload_log.txt", "a")
+    upload_log.write("got success from datakeeper: "+ port+"\n")
+    upload_log.close()
+
     # add file to table
     add_to_files_table(files_table, files_table_lock, msg["clientID"], msg["fileName"], port[:-5], True)
     m = {
@@ -315,16 +343,19 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
     unique_files_lock.acquire()
     unique_files.append(m)
     unique_files_lock.release()
-    #print(files_table)
+
 
     # send done to client
-    #handshake = socket.recv_pyobj()
-    #print(handshake)
     success_port_of_client = success['successPort']
     success_context = zmq.Context()
     success_socket = success_context.socket(zmq.PAIR)
     success_socket.connect(success_port_of_client)
     success_socket.send_pyobj(True)
+
+    #log
+    upload_log = open("upload_log.txt", "a")
+    upload_log.write("sent success message to client: "+ success_port_of_client+"\n")
+    upload_log.close()
 
     release_port(ports_table, ports_table_lock, port)
 
@@ -346,28 +377,34 @@ def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, 
         socket.send_string("file_not_found")
         return
     
-    print(loc)
     loc += ":"
     # get a free port of that machine
     port = get_free_port(ports_table, ports_table_lock, loc)
     
-    print(port)
     if(port is None):
         socket.send_string("no_free_ports")
         return
     
-    # print(port)
     # send not busy port to client
     acquire_port(ports_table, ports_table_lock, port)
     socket.send_string(port)
+
+    #log
+    download_log = open("download_log.txt", "a")
+    download_log.write("file: "+msg["fileName"]+ " will be downloaded from "+port+"\n")
+    download_log.close()
 
     # wait for success from datakeeper
     success_port = port[:-2] + str(int(port[-2]) + 1) + port[-1]
     context = zmq.Context()
     results_receiver = context.socket(zmq.PULL)
-    #print("success port",success_port)
     results_receiver.connect(success_port)
     success = results_receiver.recv_pyobj()
+
+    #log
+    download_log = open("download_log.txt", "a")
+    download_log.write("got success from datakeeper: "+ port+"\n")
+    download_log.close()
 
     # send done to client
     success_port_of_client = success['successPort']
@@ -375,6 +412,11 @@ def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, 
     success_socket = success_context.socket(zmq.PAIR)
     success_socket.connect(success_port_of_client)
     success_socket.send_pyobj(True)
+
+     #log
+    download_log = open("download_log.txt", "a")
+    download_log.write("sent success message to client: "+ success_port_of_client+"\n")
+    download_log.close()
 
     release_port(ports_table, ports_table_lock, port)
 
@@ -387,14 +429,9 @@ def process(files_table, files_table_lock, unique_files, unique_files_lock, port
 
 
     while True:
-        # print("before receiving /n")
-        #  Wait for next request from client
         msg = socket.recv_pyobj()
-        #socket.send("World from %s" % port)
-        # print ("master got message:",msg)
 
         if msg['Type']==1:
-            #socket.send_string(port)
             upload(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, msg, socket)
         elif msg['Type']==0:
             download(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket)
@@ -407,7 +444,6 @@ def get_free_port(ports_table, ports_table_lock, node):
 
         if((ports_table[i]["free"]==True) and (ports_table[i]["alive"]==True) and ((ports_table[i]['ip'][:-4] == node) or node == 'any')):
             ports_table_lock.release()
-            # print("ip::::",ports_table[i]['ip'])
             return ports_table[i]["ip"]
     ports_table_lock.release()
     return None
@@ -416,6 +452,14 @@ def get_free_port(ports_table, ports_table_lock, node):
 
 def main():
     with Manager() as manager:
+        '''
+        create logs files
+        '''
+        init = open("init.txt", "w+")
+        datakeepers_death = open("datakeepers_death.txt", "w+")
+
+
+        ''''''
 
         num_of_replicates = int(input("minimum number of replicates: "))
         
@@ -430,7 +474,6 @@ def main():
         '''
         initialize ports table
         '''
-        # initialize_ports = Process(target = initialize_ports_table, args = (ports_table,lock2))
         initialize_ports_table(ports_table, ports_table_lock)
         
 
@@ -455,11 +498,9 @@ def main():
                 }
             unique_files.append(m)
         
-        #unique_files = manager.list(s)
         '''
         start processes
         '''
-        print(unique_files)
         p1 = Process(target=process, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, master_ports[0]))
         p2 = Process(target=process, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, master_ports[1]))
         p3 = Process(target=process, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, master_ports[2]))
@@ -469,9 +510,7 @@ def main():
 
         replicate_process = Process(target=replicate, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, num_of_replicates))
 
-        # initialize_ports.start()
-        # initialize_ports.join()
-
+       
         p1.start()
         p2.start()
         p3.start()

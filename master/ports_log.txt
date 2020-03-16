@@ -1,0 +1,17 @@
+port# :5510 on ip: tcp://10.147.18.156: is requested
+port# :5511 on ip: tcp://10.147.18.156: is requested
+port# :5510 on ip: tcp://10.147.18.156: is released
+port# :5511 on ip: tcp://10.147.18.156: is released
+port# :5512 on ip: tcp://10.147.18.156: is requested
+port# :5510 on ip: tcp://10.147.18.156: is requested
+port# :5512 on ip: tcp://10.147.18.156: is released
+port# :5510 on ip: tcp://10.147.18.156: is released
+port# :5512 on ip: tcp://10.147.18.156: is requested
+port# :5512 on ip: tcp://10.147.18.156: is requested
+port# :5512 on ip: tcp://10.147.18.156: is released
+port# :5511 on ip: tcp://10.147.18.156: is requested
+port# :5511 on ip: tcp://10.147.18.156: is released
+port# :5512 on ip: tcp://10.147.18.156: is requested
+port# :5512 on ip: tcp://10.147.18.156: is released
+port# :5510 on ip: tcp://10.147.18.156: is requested
+port# :5510 on ip: tcp://10.147.18.156: is released
