@@ -38,7 +38,7 @@ for j in range(3):
 def initialize_ports_table(ports_table, lock):
     #log
     init = open("init.txt", "a")
-    init.write("datakeepers ports initialized: \n")
+    init.write("Master ["+str(int(time.time()))+"] "+"datakeepers ports initialized: \n")
     init.close()
 
     for i in range(len(datakeepers_ports_ips)):
@@ -51,7 +51,7 @@ def initialize_ports_table(ports_table, lock):
 
         #log
         init = open("init.txt", "a")
-        init.write(str(d)+'\n')
+        init.write("Master ["+str(int(time.time()))+"] "+str(d)+'\n')
         init.close()
 
         lock.acquire()
@@ -124,7 +124,7 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
 
                 #log
                 datakeepers_death = open("datakeepers_death.txt", "a")
-                datakeepers_death.write("data keeper "+ports_table[i]['ip']+" has died \n")
+                datakeepers_death.write("Master ["+str(int(time.time()))+"] "+"data keeper "+ports_table[i]['ip']+" has died \n")
                 datakeepers_death.close()
                 
         ports_table_lock.release()
@@ -168,7 +168,8 @@ def acquire_port(ports_table, ports_table_lock, port):
 
             #log
             ports_log = open("ports_log.txt", "a")
-            ports_log.write("port# "+port[-5:]+" on ip: "+port[:-4]+" is requested"+"\n")
+            ports_log.write("Master ["+str(int(time.time()))+"] "+"port# "+port[-5:]+" on ip: "+port[:-4]+" is requested"+"\n")
+            ports_log.write(str(ports_table)+"\n")
             ports_log.close()
 
             break
@@ -191,7 +192,8 @@ def release_port(ports_table, ports_table_lock, port):
 
             #log
             ports_log = open("ports_log.txt", "a")
-            ports_log.write("port# "+port[-5:]+" on ip: "+port[:-4]+" is released"+"\n")
+            ports_log.write("Master ["+str(int(time.time()))+"] "+"port# "+port[-5:]+" on ip: "+port[:-4]+" is released"+"\n")
+            ports_log.write(str(ports_table)+"\n")
             ports_log.close()
 
             break
@@ -253,7 +255,7 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
 
         #log
         replicate_log = open("replicate_log.txt", "a")
-        replicate_log.write("file: "+msg["fileName"]+ " will be replicated to "+msg["ip"]+" from "+datakeepers[0] + port+"\n")
+        replicate_log.write("Master ["+str(int(time.time()))+"] "+"file: "+msg["fileName"]+ " will be replicated to "+msg["ip"]+" from "+datakeepers[0] + port+"\n")
         replicate_log.close()
 
         
@@ -318,7 +320,7 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
 
     #log
     upload_log = open("upload_log.txt", "a")
-    upload_log.write("file: "+msg["fileName"]+ " will be uploaded to "+port+"\n")
+    upload_log.write("Master ["+str(int(time.time()))+"] "+"file: "+msg["fileName"]+ " will be uploaded to "+port+"\n")
     upload_log.close()
 
     # wait for success from datakeeper
@@ -331,7 +333,7 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
 
     #log
     upload_log = open("upload_log.txt", "a")
-    upload_log.write("got success from datakeeper: "+ port+"\n")
+    upload_log.write("Master ["+str(int(time.time()))+"] "+"got success from datakeeper: "+ port+"\n")
     upload_log.close()
 
     # add file to table
@@ -354,7 +356,7 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
 
     #log
     upload_log = open("upload_log.txt", "a")
-    upload_log.write("sent success message to client: "+ success_port_of_client+"\n")
+    upload_log.write("Master ["+str(int(time.time()))+"] "+"sent success message to client: "+ success_port_of_client+"\n")
     upload_log.close()
 
     release_port(ports_table, ports_table_lock, port)
@@ -391,7 +393,7 @@ def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, 
 
     #log
     download_log = open("download_log.txt", "a")
-    download_log.write("file: "+msg["fileName"]+ " will be downloaded from "+port+"\n")
+    download_log.write("Master ["+str(int(time.time()))+"] "+"file: "+msg["fileName"]+ " will be downloaded from "+port+"\n")
     download_log.close()
 
     # wait for success from datakeeper
@@ -403,7 +405,7 @@ def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, 
 
     #log
     download_log = open("download_log.txt", "a")
-    download_log.write("got success from datakeeper: "+ port+"\n")
+    download_log.write("Master ["+str(int(time.time()))+"] "+"got success from datakeeper: "+ port+"\n")
     download_log.close()
 
     # send done to client
@@ -415,7 +417,7 @@ def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, 
 
      #log
     download_log = open("download_log.txt", "a")
-    download_log.write("sent success message to client: "+ success_port_of_client+"\n")
+    download_log.write("Master ["+str(int(time.time()))+"] "+"sent success message to client: "+ success_port_of_client+"\n")
     download_log.close()
 
     release_port(ports_table, ports_table_lock, port)
