@@ -109,6 +109,7 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
         
         # Update ports table
         ports_table_lock.acquire()
+        # print(ports_table)
         for i in range(len(ports_table)):
             if (((datetime.datetime.now()-ports_table[i]['last_time_alive']).total_seconds() > 2) and ports_table[i]['alive'] == True):
                 recently_dead_datakeepers.append(ports_table[i]['ip'])
@@ -168,7 +169,7 @@ def acquire_port(ports_table, ports_table_lock, port):
             #log
             ports_log = open("ports_log.txt", "a")
             ports_log.write("Master ["+str(int(time.time()))+"] "+"port# "+port[-5:]+" on ip: "+port[:-4]+" is requested"+"\n")
-            ports_log.write(str(ports_table)+"\n")
+            # ports_log.write(str(ports_table)+"\n")
             ports_log.close()
 
             break
@@ -191,7 +192,7 @@ def release_port(ports_table, ports_table_lock, port):
             #log
             ports_log = open("ports_log.txt", "a")
             ports_log.write("Master ["+str(int(time.time()))+"] "+"port# "+port[-5:]+" on ip: "+port[:-4]+" is released"+"\n")
-            ports_log.write(str(ports_table)+"\n")
+            # ports_log.write(str(ports_table)+"\n")
             ports_log.close()
 
             break
