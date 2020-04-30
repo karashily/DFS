@@ -9,8 +9,8 @@ import os
 import time
 from multiprocessing import Process
 
-connectionPort="tcp://127.0.0.1:"
-masterport="tcp://127.0.0.1:"
+IP="tcp://127.0.0.1:"
+MasterIP="tcp://127.0.0.1:"
 
 class DataKeeper:
     i_Am_Alive_port="5400"
@@ -23,9 +23,9 @@ class DataKeeper:
  #################################       
     def HeartBeat(self):
         socket = self.context.socket(zmq.PUB)
-        socket.connect(masterport+self.i_Am_Alive_port)
+        socket.connect(MasterIP+self.i_Am_Alive_port)
         while True:
-            messagedata = connectionPort[:-1]
+            messagedata = IP[:-1]
             socket.send_string(messagedata)
             time.sleep(.5)
  #####################################           
@@ -52,9 +52,9 @@ class DataKeeper:
  ############################################
     def ConnectToClient(self):
         socket = self.context.socket(zmq.PAIR)
-        socket.bind(connectionPort+self.clientport)
+        socket.bind(IP+self.clientport)
         mastersocket = self.context.socket(zmq.PUSH)
-        mastersocket.bind(connectionPort+self.mastersuccessport) 
+        mastersocket.bind(IP+self.mastersuccessport) 
         while True:
             print("my client port: ",self.clientport)
             message=socket.recv_pyobj()
@@ -78,7 +78,7 @@ class DataKeeper:
 ###############################
     def SendReplica(self):
         master_socket = self.context.socket(zmq.PAIR)
-        master_socket.bind(connectionPort+self.replicationPort)
+        master_socket.bind(IP+self.replicationPort)
         while True:
             message=master_socket.recv_pyobj()
             print("keeper  received replica req  from master ")

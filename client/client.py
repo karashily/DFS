@@ -148,10 +148,8 @@ for i in range(clientsNum):
     
 for i in clients:
     i.start()
-    #i.join()
     time.sleep(0.01)
 
 for i in clients:
     i.join()
-# c1.connectToMaster(1,"1.mp4")
-# c1.connectToMaster(0,"1.mp4")
+
