@@ -52,10 +52,18 @@ class Client:
         socket = self.context.socket(zmq.PAIR)
         socket.connect(dataKeeperPort)
         toBeDownloaded={'fileName':fileName,'Type':0,'successport':self.clientSuccessPort}
-        socket.send_pyobj(toBeDownloaded)
-        print("client {}: download request sent on ".format(self.ClientID) + self.clientSuccessPort)
-        
-        downloadedVideo=socket.recv_pyobj()
+
+        socket.RCVTIMEO = 3000 # in milliseconds
+        recv = True
+        while(recv == True):
+            try:
+                socket.send_pyobj(toBeDownloaded)
+                print("client {}: download request sent on ".format(self.ClientID) + dataKeeperPort)
+                downloadedVideo=socket.recv_pyobj()
+                recv = False
+            except:
+                recv = True
+        socket.close()
         name=downloadedVideo['fileName']
         file=downloadedVideo['File']
         # Create target Directory if don't exist
@@ -71,7 +79,6 @@ class Client:
         print("client {}: waiting success message from master".format(self.ClientID))
         success=mastersocket.recv_pyobj()
         if(success==True):
-            socket.close()
             mastersocket.close()
             print("client %s: left successfully" %self.ClientID)
 #####################################################
@@ -115,7 +122,7 @@ class Client:
         else: #download
             socket.close()
             self.DownloadFile(Filename,dataport)
-        socket.close()
+        # socket.close()
             
  ######################           
 #c1=Client(random.randint(0,9))
@@ -148,7 +155,8 @@ for i in range(clientsNum):
     
 for i in clients:
     i.start()
-    time.sleep(0.01)
+    # time.sleep(0.1)
+
 
 for i in clients:
     i.join()
