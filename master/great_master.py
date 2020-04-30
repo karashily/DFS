@@ -1,4 +1,4 @@
-from multiprocessing import Process,Value,Lock,Manager
+from multiprocessing import Process,Value,Lock,Manager,RLock
 import zmq
 import datetime
 import time
@@ -14,14 +14,14 @@ from ports import *
 
 datakeepers_ports_ips = []
 
-for j in range(3):
+for j in range(len(datakeepers_ips)):
     for i in range(ports_per_datakeeper[j]):
         datakeepers_ports_ips.append(datakeepers_ips[j]+"551"+str(i))
 
 
 def initialize_ports_table(ports_table):
     #log
-    init = open("logs/init.txt", "a")
+    init = open("logs/init.txt", "w+")
     init.write("Master ["+str(int(time.time()))+"] "+"datakeepers ports initialized: \n")
     init.close()
 
@@ -29,7 +29,7 @@ def initialize_ports_table(ports_table):
         d = {
             'ip': datakeepers_ports_ips[i],
             'free': True,
-            'alive': False,
+            'alive': True,
             'last_time_alive': datetime.datetime.now() - datetime.timedelta(seconds=5)
         }
 
@@ -42,21 +42,25 @@ def initialize_ports_table(ports_table):
 
 def initialize_files_table(manager, files_table, unique_files):
     file_exists = os.path.isfile('./files.json') 
-
+    ff = None
     if(file_exists):
         if(os.stat('files.json').st_size != 0):
             with open('files.json', 'rb') as fin:
-                files_table = json.load(fin)
-                files_table = manager.list(files_table)
+                ff = json.load(fin)
+                # f = manager.list(files_table)
+                # print(f[0])
+            for fil in ff:
+                files_table.append(fil)
     else:
         f = open("files.json", "w+")
 
-    for i in range(len(files_table)):
-        m = {
-                "file_name":files_table[i]["file_name"],
-                "user_id":files_table[i]["user_id"]
-            }
-        unique_files.append(m)
+    if not ff == None:
+        for i in range(len(ff)):
+            m = {
+                    "file_name":ff[i]["file_name"],
+                    "user_id":ff[i]["user_id"]
+                }
+            unique_files.append(m)
     
 
 def main():
@@ -70,9 +74,9 @@ def main():
         num_of_replicates = int(input("minimum number of replicates: "))
         
         # creating shared variables and their locks
-        files_table_lock = Lock()
-        ports_table_lock = Lock()
-        unique_files_lock = Lock()
+        files_table_lock = RLock()
+        ports_table_lock = RLock()
+        unique_files_lock = RLock()
 
         files_table = manager.list()  
         ports_table = manager.list()
@@ -83,6 +87,7 @@ def main():
 
         # initialize files table
         initialize_files_table(manager, files_table, unique_files)
+        print(len(files_table))
         
         # create processes
         p1 = Process(target=process, args=(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, master_ports[0]))

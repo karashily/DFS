@@ -16,10 +16,10 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
             socket.send_string("filename_exists_already")
             files_table_lock.release()
             return
-    files_table_lock.release()
+    # files_table_lock.release()
 
     # find free port
-    port = get_free_port(ports_table, ports_table_lock, 'any')    
+    port = get_free_port(ports_table, ports_table_lock, ['any'])    
     
     if(port is None):
         socket.send_string("no_free_ports")
@@ -48,7 +48,9 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
     upload_log.close()
 
     # add file to table
+    # files_table_lock.acquire()
     add_to_files_table(files_table, files_table_lock, msg["clientID"], msg["fileName"], port[:-5], True)
+    files_table_lock.release()
     m = {
         "file_name":msg["fileName"],
         "user_id":msg["clientID"]
@@ -73,22 +75,27 @@ def upload(files_table, files_table_lock, unique_files, unique_files_lock, ports
     release_port(ports_table, ports_table_lock, port)
 
 
+
 def download(files_table, files_table_lock, ports_table, ports_table_lock, msg, socket):
     # find file on which datanode
-    loc = get_file_loc(files_table, files_table_lock, msg['fileName'])
+    locs = get_file_loc(files_table, files_table_lock, msg['fileName'])
+    # print(locs)
 
-    if(loc is None):
+    if(len(locs)==0):
         socket.send_string("file_not_found")
         return
     
-    loc += ":"
+    for loc in locs:
+        loc += ":"
     # get a free port of that machine
-    port = get_free_port(ports_table, ports_table_lock, loc)
+    port = get_free_port(ports_table, ports_table_lock, locs)
     
     if(port is None):
         socket.send_string("no_free_ports")
         return
     
+    # print("download req: ",port)
+
     # send not busy port to client
     socket.send_string(port)
 
@@ -131,7 +138,6 @@ def process(files_table, files_table_lock, unique_files, unique_files_lock, port
 
     while True:
         msg = socket.recv_pyobj()
-
         if msg['Type']==1:
             upload(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, msg, socket)
         elif msg['Type']==0:

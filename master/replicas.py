@@ -10,7 +10,7 @@ import copy
 
 
 def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, file, num_of_replicates):
-    datakeepers = get_datakeepers_of_file(files_table,file['file_name'])
+    datakeepers = get_datakeepers_of_file(files_table,files_table_lock,file['file_name'])
     if(len(datakeepers) >= num_of_replicates):
         return
 
@@ -19,7 +19,8 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
     list_dks_without_files = list(set(datakeepers_ips)-set(datakeepers))
     i = 0
     while ((num_of_replicates > 0) and (i < len(list_dks_without_files)) and (len(datakeepers)>0)):
-        port_dk_to_rep_file_on = get_free_port(ports_table, ports_table_lock, list_dks_without_files[i])
+        # print(list_dks_without_files[i])
+        port_dk_to_rep_file_on = get_free_port(ports_table, ports_table_lock, [list_dks_without_files[i][:-1]])
         
         i += 1
         if (port_dk_to_rep_file_on == None):
@@ -64,8 +65,13 @@ def replicate_file(files_table, files_table_lock,ports_table,ports_table_lock, f
 
 def replicate(files_table, files_table_lock, unique_files, unique_files_lock, ports_table, ports_table_lock, num_of_replicates):
     while True:
-        for i in range(len(unique_files)):
-            unique_files_lock.acquire()
-            replicate_file(files_table, files_table_lock, ports_table, ports_table_lock, unique_files[i], num_of_replicates)
-            unique_files_lock.release()
+        # print(unique_files)
+        files_table_lock.acquire()
+
+        for i in range(len(files_table)):
+            # unique_files_lock.acquire()
+            replicate_file(files_table, files_table_lock, ports_table, ports_table_lock, files_table[i], num_of_replicates)
+            # unique_files_lock.release()
+        files_table_lock.release()
+
         time.sleep(5)

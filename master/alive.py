@@ -58,6 +58,7 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
         ports_table_lock.acquire()
         for i in range(len(ports_table)):
             if (((datetime.datetime.now()-ports_table[i]['last_time_alive']).total_seconds() > 5) and ports_table[i]['alive'] == True):
+                
                 recently_dead_datakeepers.append(ports_table[i]['ip'])
                 d = {
                     'ip': ports_table[i]['ip'],
@@ -92,3 +93,4 @@ def undertaker(files_table, ports_table, files_table_lock, ports_table_lock):
                     with open('files.json', 'w') as fout:
                         json.dump(copy.deepcopy(files_table), fout)
         files_table_lock.release()
+        time.sleep(0.001)
